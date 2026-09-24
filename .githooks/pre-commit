@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+expected='yunzenn <209125778+Yunzenn@users.noreply.github.com> '
+for kind in GIT_AUTHOR_IDENT GIT_COMMITTER_IDENT; do
+    actual=$(git var "$kind")
+    case "$actual" in
+        "$expected"*) ;;
+        *) echo 'Commit blocked: use the repository yunzenn privacy identity.' >&2; exit 1 ;;
+    esac
+done
