@@ -57,4 +57,6 @@ dependencies {
     implementation(files(concentusJar))
     implementation(project(":core-protocol"))
     testImplementation(kotlin("test"))
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 }

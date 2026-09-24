@@ -17,6 +17,7 @@ class SessionCoordinatorTest {
         }
         override fun listen(start: Boolean): Boolean { calls += "listen:$start"; return true }
         override fun abort(): Boolean { calls += "abort"; return true }
+        override fun sendAudio(bytes: ByteArray): Boolean { calls += "audio"; return true }
         override fun disconnect() { calls += "disconnect" }
         override fun close() { calls += "close" }
         suspend fun hello(id: Long = connections) = events.send(SocketEvent.Message(id,
@@ -25,6 +26,25 @@ class SessionCoordinatorTest {
             events.send(SocketEvent.Disconnected(connections, "test", kind))
     }
     private val ready = BootstrapResult.Ready(WebSocketConfig("wss://example.test/ws", null))
+
+    @Test fun uplinkRequiresListeningAndCurrentGeneration() = runTest {
+        val transport = FakeTransport()
+        val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport)
+        coordinator.start(); runCurrent()
+        assertNull(coordinator.beginCapture())
+        transport.hello(); runCurrent()
+        val generation = assertNotNull(coordinator.beginCapture())
+        assertFalse(coordinator.sendAudio(byteArrayOf(1), generation - 1))
+        assertTrue(coordinator.sendAudio(byteArrayOf(1), generation))
+        coordinator.listen(false); runCurrent()
+        assertFalse(coordinator.sendAudio(byteArrayOf(1), generation))
+        assertEquals(ConversationState.THINKING, coordinator.state.value.conversation)
+        coordinator.abort(); runCurrent(); transport.hello(); runCurrent()
+        assertNotNull(coordinator.beginCapture())
+        assertFalse(coordinator.sendAudio(byteArrayOf(1), generation))
+        assertEquals(1, transport.calls.count { it == "audio" })
+        coordinator.close()
+    }
 
     @Test fun stableRecoveryRestoresBudgetAcrossRepeatedLongLivedConnections() = runTest {
         val transport = FakeTransport()

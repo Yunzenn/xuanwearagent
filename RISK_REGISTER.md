@@ -6,12 +6,14 @@
 | Cubism Core 或模型授权不适合分发 | P0 | Gate B 前完成 SDK/资产条款审查 |
 | Server hello 与实际 TTS Opus 采样率不一致 | P0C STATIC PASS / Runtime pending | 冻结 commit 的 bug 已由先红后绿测试复现并修复；Server Hello 与 TTS encoder 均由 `conn.sample_rate` 驱动，预建 encoder 有一致性守卫；仍需真实 TTS Opus 24k 解码验证后关闭 |
 | OTA/activation 字段与参考客户端漂移 | P0 | 从 rokid-xiaozhi 抽取并做契约测试 |
-| WebSocket v1 二进制无 turn id 导致旧音频回放 | MITIGATED / Audio pending | SessionCoordinator 中央连接/epoch 过滤；abort 先 flush、再发送、再更换连接隔离迟到轮次。真实编码/PCM 队列与 AudioTrack flush 留到 1C；TTS stop 不等于播放完毕 |
+| WebSocket v1 二进制无 turn id 导致旧音频回放 | MITIGATED / Phone pending | SessionCoordinator 中央连接/epoch 过滤；abort 先 flush、再发送、再换连接。encoded/PCM 队列竞态与模拟器 AudioTrack pause/flush 已验证；手机听感仍待测，TTS stop 不等于播放完毕 |
 | 激活模式与真实服务端不匹配 | Runtime pending | 支持验证码展示/有界 Bootstrap 轮询至 credentials；challenge-only 明确失败，不伪造 ESP32 HMAC；暂无服务器地址 |
 | 身份存储损坏导致重新绑定 | MITIGATED | 默认报错不换号；只有明确确认后重置，保存原始文件。API 28 两次独立进程持久化通过 |
-| Coordinator 尚未接入产品会话入口 | OPEN | 本轮单元/回环验证不等于完整 App 或真实语音 E2E；音频 sink 当前为契约回调 |
+| 真实会话入口尚未联调 | Runtime pending | 已接 Debug Session、AudioRecord/AudioTrack 和 Coordinator；本地 Mock 到 PCM 与模拟器设备 API 分别通过，仍无真实服务端/参考手机会话证据 |
 | 长期运行累积耗尽重试预算 | MITIGATED | 连续 Ready 60 秒才恢复预算；短暂 Ready 不恢复，旧 epoch/connection 的稳定计时器无效。8 次稳定恢复循环回归测试通过 |
-| Codec 自回环不足以证明服务端/设备音频质量 | Phase 1C OPEN | 冻结 Concentus 编解码与分帧测试通过；仍须独立音频 E2E、AudioTrack flush、参考手机和 C4 runtime 验证 |
+| Codec 自回环不足以证明服务端/设备音频质量 | Phase 1C OPEN | 已补 Mock WebSocket 音频 E2E、queue 竞态和模拟器 AudioTrack flush；仍须参考手机、10 分钟稳定性与 C4 runtime 验证 |
+| 采集结束时不足一帧的尾音 | OPEN | 录音中 accumulator 保留跨 chunk 余数；用户松开/打断时不补零，明确计数并丢弃未满960 tail。参考手机须评估尾音完整性，不能称作无损结束 |
+| 音频焦点/来电/慢设备输出 | OPEN | 当前是前台 Debug Session，离开即关；非阻塞写和有界队列避免无限堆积，但没有 stall watchdog/音频焦点策略，过载终止会话 |
 | 本地无 Android 工程基线 | CLOSED | Phase 0B 三模块 skeleton、clean build、单元测试及 lint 已通过，审查已通过 |
 | GitHub 仓库动态变化 | P1 | 记录审计日期、commit/ref；依赖版本固定 |
 | 本机构建环境缺失 | CLOSED | 已安装 Platform 35、Build Tools 35.0.0、ADB 37.0.1；Gradle 8.9 clean build 已通过 |

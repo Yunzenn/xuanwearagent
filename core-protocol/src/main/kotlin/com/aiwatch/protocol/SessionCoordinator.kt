@@ -14,6 +14,7 @@ data class SessionSnapshot(
     val retry: Int = 0,
     val diagnostic: String? = null,
     val activationCode: String? = null,
+    val conversation: ConversationState = ConversationState.IDLE,
 ) {
     override fun toString() = "SessionSnapshot(phase=$phase, generation=$generation, retry=$retry)"
 }
@@ -41,7 +42,9 @@ class SessionCoordinator(
         data class Inbound(val epoch: Long, val event: SocketEvent) : Command
         data class Retry(val epoch: Long) : Command
         data class Stable(val epoch: Long, val connectionId: Long) : Command
-        data class Listen(val start: Boolean) : Command
+        data class Listen(val start: Boolean, val generation: Long? = null) : Command
+        data class BeginCapture(val done: CompletableDeferred<Long?>) : Command
+        data class Audio(val generation: Long, val bytes: ByteArray, val done: CompletableDeferred<Boolean>) : Command
         data object Abort : Command
         data class Shutdown(val done: CompletableDeferred<Unit>) : Command
     }
@@ -87,12 +90,17 @@ class SessionCoordinator(
                     publish(SessionPhase.READY)
                 }
                 is Command.Inbound -> if (active && command.epoch == epoch && command.event.connectionId == currentConnection) handleEvent(command.event)
-                is Command.Listen -> if (mutableState.value.phase == SessionPhase.READY) {
-                    if (command.start && conversation.state == ConversationState.IDLE && transport.listen(true)) {
-                        generation++; conversation.startListening(); publish(SessionPhase.READY)
+                is Command.Listen -> if (mutableState.value.phase == SessionPhase.READY &&
+                    (command.generation == null || command.generation == generation)) {
+                    if (command.start) beginListening()
+                    else if (conversation.state == ConversationState.LISTENING && transport.listen(false)) {
+                        conversation.stopListening(); publish(SessionPhase.READY)
                     }
-                    else if (!command.start && conversation.state == ConversationState.LISTENING && transport.listen(false)) conversation.stopListening()
                 }
+                is Command.BeginCapture -> command.done.complete(beginListening())
+                is Command.Audio -> command.done.complete(
+                    active && mutableState.value.phase == SessionPhase.READY && command.generation == generation &&
+                        conversation.state == ConversationState.LISTENING && transport.sendAudio(command.bytes))
                 Command.Abort -> if (mutableState.value.phase == SessionPhase.READY) {
                     interruptPolicy.interrupt(object : InterruptContext {
                         override fun invalidateAndFlushAudio() = invalidateAudio()
@@ -107,6 +115,7 @@ class SessionCoordinator(
             publish(SessionPhase.ERROR, "Session consumer or lifecycle failure")
         } finally {
             worker?.cancel(); receiver?.cancel(); stabilityTimer?.cancel()
+            runCatching { flushAudio() }
             runCatching { transport.close() }; commands.close()
         }
     }
@@ -124,10 +133,30 @@ class SessionCoordinator(
         select<Unit> { done.onAwait { }; actor.onJoin { } }
     }
     suspend fun listen(start: Boolean) { commands.send(Command.Listen(start)) }
+    suspend fun endCapture(generation: Long) { commands.send(Command.Listen(false, generation)) }
+    suspend fun beginCapture(): Long? {
+        val done = CompletableDeferred<Long?>()
+        commands.send(Command.BeginCapture(done))
+        return select { done.onAwait { it }; actor.onJoin { null } }
+    }
+    suspend fun sendAudio(bytes: ByteArray, generation: Long): Boolean {
+        require(bytes.isNotEmpty() && bytes.size <= 65536)
+        val done = CompletableDeferred<Boolean>()
+        commands.send(Command.Audio(generation, bytes.copyOf(), done))
+        return select { done.onAwait { it }; actor.onJoin { false } }
+    }
     suspend fun abort() { commands.send(Command.Abort) }
 
     private fun publish(phase: SessionPhase, diagnostic: String? = null, code: String? = null) {
-        mutableState.value = SessionSnapshot(phase, currentConnection, generation, retries, diagnostic, code)
+        mutableState.value = SessionSnapshot(phase, currentConnection, generation, retries, diagnostic, code, conversation.state)
+    }
+    private fun beginListening(): Long? {
+        if (!active || mutableState.value.phase != SessionPhase.READY || conversation.state != ConversationState.IDLE) return null
+        // Discard any previous turn's device-side playback before capturing the next turn.
+        flushAudio()
+        if (!transport.listen(true)) return null
+        generation++; conversation.startListening(); publish(SessionPhase.READY)
+        return generation
     }
     private fun invalidateAudio() {
         generation++; conversation.disconnected(); flushAudio()
@@ -214,8 +243,8 @@ class SessionCoordinator(
                 }
                 is ProtocolEvent.BinaryAudio -> if (conversation.acceptsAudio(conversation.generation)) onEvent(payload, generation)
                 is ProtocolEvent.Tts -> when (payload.phase) {
-                    ProtocolEvent.Tts.Phase.START -> if (conversation.ttsStarted()) onEvent(payload, generation)
-                    ProtocolEvent.Tts.Phase.STOP -> if (conversation.state == ConversationState.SPEAKING) { conversation.ttsStopped(); onEvent(payload, generation) }
+                    ProtocolEvent.Tts.Phase.START -> if (conversation.ttsStarted()) { publish(SessionPhase.READY); onEvent(payload, generation) }
+                    ProtocolEvent.Tts.Phase.STOP -> if (conversation.state == ConversationState.SPEAKING) { conversation.ttsStopped(); publish(SessionPhase.READY); onEvent(payload, generation) }
                     ProtocolEvent.Tts.Phase.SENTENCE_START -> if (conversation.state == ConversationState.SPEAKING) onEvent(payload, generation)
                 }
                 is ProtocolEvent.Error -> fail("Protocol error")

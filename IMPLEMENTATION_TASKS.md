@@ -57,11 +57,11 @@ Phase 1A 已通过；Phase 1B 用户审查通过，minor follow-up 已落地：�
 - [x] 固定 Concentus 原始源码依赖与归档哈希、随包 LICENSE
 - [x] OpusCodec / ConcentusOpusCodec；16k mono 960-sample 上行，显式 playback config 下行
 - [x] 真实 Opus 编解码、不同采样率/声道、任意 chunk 分帧与 reset 测试
-- [ ] AudioCaptureSource / AudioRecord 权限、初始化与线程生命周期
-- [ ] Coordinator 上行音频入口与 generation 隔离
-- [ ] encoded / PCM 有界队列、AudioTrack 输出与真实 pause/flush
-- [ ] Mock WebSocket E2E：Hello → tts:start → 合法 Opus → PCM → tts:stop
-- [ ] 最小 Debug Session 页面（状态、按住说话、打断、包数、队列、generation/connectionId）
+- [x] AudioCaptureSource / AudioRecord 权限、初始化与线程生命周期（API 28 模拟器验证；手机待测）
+- [x] Coordinator 上行音频入口与 generation 隔离
+- [x] encoded / PCM 有界队列、AudioTrack 输出与真实 pause/flush（JVM 竞态测试 + 模拟器 API 验证）
+- [x] Mock WebSocket E2E：Hello → tts:start → 合法 Opus → PCM → tts:stop（末端为测试 sink）
+- [x] 最小 Debug Session 页面（状态、按住说话、打断、包数、队列、generation/connectionId；启动关闭 smoke test）
 - [ ] 参考手机 mic → codec → mock/server → codec → speaker
 
 当前不是 Phase 1C PASS；详见 PHASE_1C_REPORT.md。CD12Max 与 C4 runtime Gate 不变。

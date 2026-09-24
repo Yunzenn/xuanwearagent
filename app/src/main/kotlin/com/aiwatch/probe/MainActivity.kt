@@ -46,6 +46,10 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             addView(tabs)
             addView(Button(context).apply {
+                setText(R.string.debug_session)
+                setOnClickListener { startActivity(android.content.Intent(this@MainActivity, DebugSessionActivity::class.java)) }
+            })
+            addView(Button(context).apply {
                 setText(R.string.identity)
                 setOnClickListener {
                     activityScope.launch {

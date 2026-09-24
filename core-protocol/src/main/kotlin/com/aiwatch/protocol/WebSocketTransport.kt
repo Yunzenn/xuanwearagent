@@ -17,6 +17,7 @@ interface SessionTransport : Closeable {
     fun connect(config: WebSocketConfig, identity: DeviceIdentity): Long
     fun listen(start: Boolean): Boolean
     fun abort(): Boolean
+    fun sendAudio(bytes: ByteArray): Boolean
     fun disconnect()
 }
 
@@ -85,7 +86,7 @@ class WebSocketTransport(
         sendText(protocol.abort(machine.hello?.sessionId ?: ""))
     }
 
-    fun sendAudio(bytes: ByteArray): Boolean = synchronized(lock) {
+    override fun sendAudio(bytes: ByteArray): Boolean = synchronized(lock) {
         if (bytes.isEmpty() || bytes.size > 65_536 || !canSend()) false
         else socket!!.send(bytes.toByteString()).also { if (!it) finish(machine.connectionId, "Send failed") }
     }
