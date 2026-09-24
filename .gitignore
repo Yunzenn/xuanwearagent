@@ -1,0 +1,14 @@
+.gradle/
+.idea/
+**/build/
+local.properties
+*.iml
+captures/
+.tools/
+.android-sdk/
+gradle-*-bin.zip
+commandlinetools-win.zip
+.upstream/
+.kotlin/
+__pycache__/
+*.pyc

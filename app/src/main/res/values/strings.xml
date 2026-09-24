@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AIWatch Phase 0 Probe</string>
+    <string name="tab_device">Device</string>
+    <string name="tab_audio">Audio</string>
+    <string name="tab_graphics">Graphics</string>
+    <string name="tab_storage">Storage</string>
+    <string name="export_reports">Export reports</string>
+    <string name="export_success">Exported to:\n%1$s\n\nRetrieve with adb run-as after the device Gate.</string>
+</resources>

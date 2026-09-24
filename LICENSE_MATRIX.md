@@ -1,0 +1,15 @@
+# License Matrix — Frozen Evidence
+
+| 来源与 commit | License 文件 | 结论 | 分发义务/限制 |
+|---|---|---|---|
+| `78/xiaozhi-esp32@64b57d0...` | `/LICENSE` | MIT | 源码实质复制需保留版权与许可文本。 |
+| `xinnan-tech/xiaozhi-esp32-server@788f530...` | `/LICENSE` | MIT | 后端 patch 保留版权与许可文本。 |
+| `mdloverm/rokid-xiaozhi@8e3c920...` | `/LICENSE` | MIT，Copyright 2026 DLOVER | 抽取代码时保留 copyright + MIT notice。 |
+| `DayanJ/xiaozhi-android-native@5fdc51e...` | `/LICENSE` | MIT，Copyright 2025 DayanJ | 目前仅参考；复制时保留 notice。 |
+| `lostromb/concentus@3885c4e...` | `/LICENSE` | BSD 风格三条款/Opus 同类许可 | 源码保留 notice；二进制分发在文档/材料中复现版权、条件和免责声明；不得用贡献者名义背书。 |
+| `Live2D/CubismJavaSamples@8ce6803...` | `/LICENSE.md`、`/Core/LICENSE.md` | 多重专用许可 | Java Components：Open Software License；Core：Proprietary Software License；达到条款定义的 business 门槛时需 Release License；样例模型另行授权。发布前必须法律复核。 |
+| `Voine/ChatWaifu_Mobile@14092ac...` | 根目录未发现 LICENSE | 无法授予复制权 | REFERENCE ONLY，禁止复制。 |
+| `TOM88812/xiaozhi-android-client@30a0c80...` | `/LICENSE` | Apache-2.0 | 保留 LICENSE/NOTICE 与修改说明；目前仅参考。 |
+| `stixez/droid-mcp@aeaa5b9...` | `/LICENSE` | Apache-2.0 | 若以后引入，保留许可证/NOTICE 和修改说明。 |
+
+说明：本矩阵不是法律意见。第三方依赖和用户导入模型资产仍需独立审查。
