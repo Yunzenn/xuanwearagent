@@ -1,13 +1,13 @@
 # Phase 0C Report
 
 日期：2026-09-25  
-总体状态：**NOT COMPLETE — 不得进入 Phase 1**
+总体状态：**NOT COMPLETE — 与 Phase 1 软件开发并行**
 
 | Gate | 状态 | 证据 | 下一解除条件 |
 |---|---|---|---|
-| C1 Device Probe | BLOCKED | `adb devices -l` 返回空设备列表 | CD12Max 通过 ADB 授权连接，执行 Probe 并导出真实 md/json |
-| C2 Audio Gate C | BLOCKED | 无目标真机，无法验证 HAL、chunk 分布、AudioTrack 与 10 分钟稳定性 | C1 完成后在 CD12Max 运行 16k 原生 capture 探测和完整 loopback |
-| C3 Cubism Gate B | BLOCKED | 无目标真机，不能验证 ABI/GL/FPS/温度 | C1 确认 ABI/GL 后运行冻结官方 sample + 合法模型 10 分钟 |
+| C1 Device Probe | TARGET VALIDATION PENDING | `adb devices -l` 返回空设备列表 | CD12Max 通过 ADB 授权连接，执行 Probe 并导出真实 md/json |
+| C2 Audio Gate C | TARGET VALIDATION PENDING | 无目标真机，无法验证 HAL、chunk 分布、AudioTrack 与 10 分钟稳定性 | C1 完成后在 CD12Max 运行 16k 原生 capture 探测和完整 loopback |
+| C3 Cubism Gate B | TARGET VALIDATION PENDING | 无目标真机，不能验证 ABI/GL/FPS/温度 | C1 确认 ABI/GL 后运行冻结官方 sample + 合法模型 10 分钟 |
 | C4 Server Audio Contract | STATIC PASS | 精确冻结 checkout；补丁前 5 failed/3 passed，补丁后 10 passed；上行/下行字段拆分，TTS encoder 与 Server Hello rate 同源并有不一致守卫 | 在真实 server/TTS provider 抓取下行 Opus，以 Server Hello 宣告值正确解码后升级为 PASS |
 
 ## C1
@@ -32,4 +32,4 @@ C4 当前仅为 `STATIC PASS`：没有真实 TTS provider/部署环境，因此�
 
 ## 边界确认
 
-本轮未实现 DeviceIdentity、BootstrapRepository、业务 WebSocket、Conversation FSM、Live2D Avatar、Character、MCP 或完整 UI。
+Phase 0C 原始验收未涉及产品功能；现已授权 Phase 1 软件开发并行。最新软件进展见 PHASE_1_REPORT.md，目标机结论仍须 CD12Max 实测。

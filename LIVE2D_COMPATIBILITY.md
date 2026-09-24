@@ -2,7 +2,7 @@
 
 ## Gate status
 
-**C3 Cubism Gate B: BLOCKED**
+**C3 Cubism Gate B: TARGET VALIDATION PENDING**
 
 原因：CD12Max 未连接。不得以桌面、模拟器或其他 Android 设备替代 ABI、OpenGL ES、性能、温度与 10 分钟稳定性结论。
 

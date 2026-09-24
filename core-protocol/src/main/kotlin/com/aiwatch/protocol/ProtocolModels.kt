@@ -1,6 +1,6 @@
 package com.aiwatch.protocol
 
-/** Phase 0B contract types only. No transport or conversation implementation yet. */
+/** Platform-independent events; JSON is decoded at the protocol boundary. */
 sealed interface ProtocolEvent {
     data class Hello(
         val sessionId: String,
@@ -13,6 +13,7 @@ sealed interface ProtocolEvent {
     }
     data class Llm(val text: String, val emotion: String? = null) : ProtocolEvent
     data class Mcp(val payload: String) : ProtocolEvent
+    data class Unknown(val type: String) : ProtocolEvent
     data class BinaryAudio(val bytes: ByteArray) : ProtocolEvent
     data class Error(val message: String, val cause: Throwable? = null) : ProtocolEvent
 }

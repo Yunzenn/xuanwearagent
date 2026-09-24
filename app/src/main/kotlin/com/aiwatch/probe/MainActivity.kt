@@ -9,9 +9,16 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class MainActivity : Activity() {
     private lateinit var output: TextView
+    private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +45,40 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(tabs)
+            addView(Button(context).apply {
+                setText(R.string.identity)
+                setOnClickListener {
+                    activityScope.launch {
+                        try {
+                            val identity = (application as ProbeApplication).identityStore.getOrCreate()
+                            output.text = getString(R.string.identity_value, identity.deviceId, identity.clientId)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            output.setText(R.string.identity_unavailable)
+                        }
+                    }
+                }
+            })
             addView(Button(context).apply { setText(R.string.export_reports); setOnClickListener { exportReports() } })
+            addView(Button(context).apply {
+                setText(R.string.reset_identity)
+                setOnClickListener {
+                    android.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle(R.string.reset_identity)
+                        .setMessage(R.string.reset_identity_warning)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.reset_identity) { _, _ ->
+                            activityScope.launch {
+                                try {
+                                    val identity = (application as ProbeApplication).identityStore.resetForRebinding(true)
+                                    output.text = getString(R.string.identity_value, identity.deviceId, identity.clientId)
+                                } catch (cancelled: CancellationException) { throw cancelled }
+                                catch (_: Exception) { output.setText(R.string.reset_identity_failed) }
+                            }
+                        }.show()
+                }
+            })
             addView(ScrollView(context).apply { addView(output) }, LinearLayout.LayoutParams(-1, 0, 1f))
         }
         setContentView(root)
@@ -48,6 +88,11 @@ class MainActivity : Activity() {
     private fun showSection(name: String) {
         output.text = ProbeReport.collect(this).sections[name].orEmpty().entries
             .joinToString("\n") { "${it.key}: ${it.value}" }
+    }
+
+    override fun onDestroy() {
+        activityScope.cancel()
+        super.onDestroy()
     }
 
     private fun exportReports() {

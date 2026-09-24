@@ -1,4 +1,10 @@
 <resources>
+    <string name="reset_identity">Reset device identity</string>
+    <string name="reset_identity_warning">This changes the device identity and requires binding the device again on your server. Previous identity data will be preserved locally for diagnosis. Continue?</string>
+    <string name="reset_identity_failed">Identity reset failed. Previous data is preserved; inspect storage before retrying.</string>
+    <string name="identity">Identity</string>
+    <string name="identity_value">Device ID: %1$s\nClient ID: %2$s</string>
+    <string name="identity_unavailable">Identity storage unavailable; identity was not reset.</string>
     <string name="app_name">AIWatch Phase 0 Probe</string>
     <string name="tab_device">Device</string>
     <string name="tab_audio">Audio</string>

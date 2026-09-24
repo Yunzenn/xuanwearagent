@@ -4,7 +4,7 @@
 
 ## Gate status
 
-**C1 Device Probe: BLOCKED**
+**C1 Device Probe: TARGET VALIDATION PENDING**
 
 2026-09-25 执行 `adb devices -l`，ADB daemon 正常启动，但设备列表为空。没有使用商品页、模拟器或预期参数填充报告。
 

@@ -16,24 +16,26 @@
 - [x] 4 个 accumulator 测试在 debug/release variant 共执行 8 次，0 failure/0 skipped
 - [x] Probe APK 已通过签名和 zipalign 结构验证，minSdk=28
 
-Phase 0B 状态：**PASS / CLOSED，审查已通过。不得自动进入 Phase 1。**
+Phase 0B 状态：**PASS / CLOSED，审查已通过。用户已授权 Phase 1 软件开发与目标设备验收并行。**
 
 ## Phase 0C（需要真机/服务端）
 
-- [ ] C1 `BLOCKED`：ADB 无设备；连接 CD12Max 后完成 DeviceCapabilityReport.md/json
-- [ ] C2 `BLOCKED`：需要 CD12Max；完成 AudioRecord → accumulator → Concentus → AudioTrack 10 分钟 Gate
-- [ ] C3 `BLOCKED`：需要 CD12Max；运行冻结 Cubism sample + 合法模型 10 分钟
+- [ ] C1 `TARGET VALIDATION PENDING`：ADB 无设备；连接 CD12Max 后完成 DeviceCapabilityReport.md/json
+- [ ] C2 `TARGET VALIDATION PENDING`：需要 CD12Max；完成 AudioRecord → accumulator → Concentus → AudioTrack 10 分钟 Gate
+- [ ] C3 `TARGET VALIDATION PENDING`：需要 CD12Max；运行冻结 Cubism sample + 合法模型 10 分钟
 - [x] C4 `STATIC PASS`：冻结 checkout 上先以测试复现 bug，再完成最小 patch；10 个契约测试及语法编译通过
 
 C4 最终补丁保存在 `evidence/patches/xiaozhi-server-audio-contract.patch`，回归测试保存在 `evidence/tests/test_hello_audio_contract.py`。真实 server/TTS provider 的下行 Opus 抓取与 24k 解码尚未执行，因此状态只能是 `STATIC PASS`，不得标记最终 `PASS`。
 
 P0-SERVER-AUDIO-CONTRACT 失败时只允许修改服务端最小必要代码，Android 端不得猜测采样率。
 
-Phase 0C 状态：**未完成。C1/C2/C3 BLOCKED，C4 STATIC PASS（Runtime pending）。不得进入 Phase 1。**
+Phase 0C 状态：**未完成。C1/C2/C3 TARGET VALIDATION PENDING，C4 STATIC PASS（Runtime pending）。与 Phase 1 软件开发并行。**
 
 ## Phase 1 vertical slice
 
-状态：**NOT STARTED**。须 C1、C2、C3、C4 全部最终 PASS 后启动。
+状态：**IN PROGRESS**。JVM 单测、模拟器 API 28、参考手机与 CD12Max 四层证据独立记录；软件通过不代表目标机通过。
+
+Phase 1A：PASS WITH CONDITIONS（用户审查）。Phase 1B：已完成 SessionCoordinator、有限退避/认证刷新、集中旧事件过滤、验证码激活轮询、确认后身份恢复、TLS 负向测试及 APK ABI 审计。38 个 core-protocol 测试通过；API 28 模拟器实际进程重启身份一致性通过。验证码模式仅本地自动测试，真实服务端激活、完整应用会话入口仍待联调；challenge-only 硬件 HMAC 模式不支持。详见 PHASE_1B_REPORT.md。Phase 1C 音频链未开始。
 
 1. DeviceIdentity + DataStore 重启持久化测试
 2. BootstrapRepository（OTA/activation/WS token）
