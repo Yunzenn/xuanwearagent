@@ -24,6 +24,8 @@ class PlaybackQueueTest {
             assertFalse(queue.offer(byteArrayOf(2), 1))
             repeat(3) { queue.pump() }
             assertEquals(listOf<Short>(1, 2, 3, 4, 5), sink.written)
+            assertEquals(2L, queue.metrics.partialWrites)
+            assertEquals(5L, queue.metrics.writtenSamples)
             assertTrue(queue.idle)
         }
     }
@@ -69,6 +71,9 @@ class PlaybackQueueTest {
             repeat(100) { queue.pump() }
             assertFalse(queue.offer(byteArrayOf(1), 1))
             assertEquals(2, queue.encodedDepth); assertEquals(1, queue.pcmDepth)
+            assertEquals(2, queue.metrics.maxEncodedDepth)
+            assertEquals(1, queue.metrics.maxPcmDepth)
+            assertEquals(1L, queue.metrics.overloads)
         }
     }
 }

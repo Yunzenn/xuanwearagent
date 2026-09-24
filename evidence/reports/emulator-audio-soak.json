@@ -1,0 +1,620 @@
+{
+  "status": "PASS",
+  "api": 28,
+  "scope": "emulator only; test server in same process; no audible/real Xiaozhi certification",
+  "txPackets": 4428,
+  "rxPackets": 3398,
+  "paddedFinalFrames": 734,
+  "paddingSamples": 239760,
+  "discardedTailSamples": 0,
+  "readChunkHistogram": {
+    "160": 225,
+    "400": 485,
+    "640": 4,
+    "1024": 3690
+  },
+  "audioError": null,
+  "elapsedMs": 600770,
+  "cycles": 738,
+  "interrupts": 73,
+  "maxRssKb": 137276,
+  "processCpuMs": 117798,
+  "releaseToServerStopMaxMs": 49,
+  "serverUplinkPackets": 4428,
+  "serverDecodedSamples": 4250880,
+  "latePacketsAfterStop": 0,
+  "playbackByConnection": {
+    "1": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "2": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "3": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "4": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "5": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "6": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "7": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "8": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "9": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "10": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "11": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "12": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "13": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "14": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "15": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "16": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "17": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "18": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "19": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "20": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "21": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "22": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "23": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "24": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "25": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "26": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "27": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "28": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "29": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 18,
+      "writtenSamples": 66240
+    },
+    "30": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "31": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "32": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "33": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "34": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "35": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "36": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "37": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "38": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "39": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "40": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "41": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "42": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 24,
+      "writtenSamples": 66240
+    },
+    "43": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "44": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "45": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "46": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "47": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 18,
+      "writtenSamples": 66240
+    },
+    "48": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "49": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "50": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "51": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "52": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "53": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "54": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "55": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 18,
+      "writtenSamples": 66240
+    },
+    "56": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 24,
+      "writtenSamples": 66240
+    },
+    "57": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "58": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "59": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "60": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "61": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "62": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "63": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "64": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "65": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "66": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 23,
+      "writtenSamples": 66240
+    },
+    "67": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "68": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 20,
+      "writtenSamples": 66240
+    },
+    "69": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 19,
+      "writtenSamples": 66240
+    },
+    "70": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "71": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "72": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 21,
+      "writtenSamples": 66240
+    },
+    "73": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 22,
+      "writtenSamples": 66240
+    },
+    "74": {
+      "encodedPeak": 1,
+      "pcmPeak": 1,
+      "partialWrites": 0,
+      "overloads": 0,
+      "underruns": 16,
+      "writtenSamples": 57600
+    }
+  }
+}

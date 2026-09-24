@@ -2,6 +2,8 @@ package com.aiwatch.audio
 
 import com.aiwatch.protocol.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import java.util.Collections
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okhttp3.mockwebserver.MockResponse
@@ -15,10 +17,14 @@ import kotlin.math.sin
 import kotlin.test.*
 
 class MockAudioSessionTest {
-    @Test fun realWebSocketRoutes16kUplinkAnd24kTtsToPcmQueue() = runBlocking<Unit> {
+    @Test fun realWebSocketRoutes16kUplinkAnd24kTtsToPcmQueue() = runSession(0)
+    @Test fun paddedFinalOpusFrameArrivesBeforeListenStop() = runSession(100)
+
+    private fun runSession(tail: Int) = runBlocking<Unit> {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
-        val uplinkSamples = CompletableDeferred<Int>()
+        val uplinkSamples = Channel<Int>(Channel.UNLIMITED)
+        val wireOrder = Collections.synchronizedList(mutableListOf<String>())
         val stopped = CompletableDeferred<Unit>()
         val pcm = mutableListOf<Short>()
         var queue: PlaybackQueue? = null
@@ -34,6 +40,7 @@ class MockAudioSessionTest {
                     if (text.contains("\"type\":\"hello\"")) {
                         webSocket.send("""{"type":"hello","transport":"websocket","session_id":"audio-test","audio_params":{"format":"opus","sample_rate":24000,"channels":1,"frame_duration":60}}""")
                     } else if (text.contains("\"state\":\"stop\"")) {
+                        wireOrder.add("stop")
                         webSocket.send("""{"type":"tts","state":"start"}""")
                         packets.forEach { webSocket.send(it.toByteString()) }
                         webSocket.send("""{"type":"tts","state":"stop"}""")
@@ -42,9 +49,10 @@ class MockAudioSessionTest {
                 override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
                     try {
                         val output = ShortArray(1920)
-                        uplinkSamples.complete(OpusDecoder(16000, 1).decode(bytes.toByteArray(), 0, bytes.size,
+                        wireOrder.add("audio")
+                        uplinkSamples.trySend(OpusDecoder(16000, 1).decode(bytes.toByteArray(), 0, bytes.size,
                             output, 0, output.size, false))
-                    } catch (failure: Exception) { uplinkSamples.completeExceptionally(failure) }
+                    } catch (failure: Exception) { uplinkSamples.close(failure) }
                 }
             }))
             val transport = WebSocketTransport(allowInsecureDevelopment = true)
@@ -76,10 +84,19 @@ class MockAudioSessionTest {
                 withTimeout(5000) { while (coordinator.state.value.phase != SessionPhase.READY) delay(5) }
                 val generation = assertNotNull(coordinator.beginCapture())
                 val encoder = ConcentusOpusCodec(PlaybackAudioConfig("opus", 24000, 1, 60))
-                assertTrue(coordinator.sendAudio(encoder.encodeUplink(ShortArray(960) { 1000 }), generation))
-                assertEquals(960, withTimeout(5000) { uplinkSamples.await() })
+                val accumulator = PcmFrameAccumulator(960)
+                accumulator.append(ShortArray(960 + tail) { 1000 }).forEach {
+                    assertTrue(coordinator.sendAudio(encoder.encodeUplink(it), generation))
+                }
+                accumulator.finishUtterance()?.let {
+                    assertTrue(coordinator.sendAudio(encoder.encodeUplink(it), generation))
+                }
+                assertNull(accumulator.finishUtterance())
                 coordinator.endCapture(generation)
                 withTimeout(5000) { stopped.await() }
+                val expectedPackets = if (tail == 0) 1 else 2
+                repeat(expectedPackets) { assertEquals(960, withTimeout(5000) { uplinkSamples.receive() }) }
+                assertEquals(List(expectedPackets) { "audio" } + "stop", wireOrder.toList())
                 val playback = assertNotNull(queue)
                 while (!playback.idle) playback.pump()
                 assertEquals(4320, pcm.size)

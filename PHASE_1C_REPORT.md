@@ -1,6 +1,6 @@
 # Phase 1C — Audio vertical slice 开发记录
 
-状态：IN PROGRESS。本地 Mock 音频闭环和模拟器 API 验证通过；参考手机、真实 Xiaozhi 和持续运行验收尚未完成。用户已通过 Phase 1A/1B 审查。
+状态：IN PROGRESS。本地软件纵向链及 API 28 模拟器十分钟循环稳定性通过；参考手机、真实 Xiaozhi 与目标设备验收尚未完成。用户已通过 Phase 1A/1B 审查。
 
 ## 首批增量（历史记录）
 
@@ -29,7 +29,7 @@
 - TTS stop 只关闭入站接收，已接受数据继续 drain；新一轮 listen 会清上一轮设备缓冲。播放 worker 空闲时等待 channel 通知，不做持续轮询；有待写 PCM 时每 5ms 尝试非阻塞写。
 - DebugAudioSession 接入 HTTPS Bootstrap → Coordinator → Opus → AudioTrack，源自 Hello 的播放参数直传 decoder/AudioTrack。发生非 Ready 状态会停止采集，离开页面关闭会话、录音、播放与重连。Connect 本身不启动麦克风。
 - Probe 首页增加 Debug Session 页面：HTTPS 地址、Connect、Hold to Talk、Interrupt、Disconnect；显示连接/会话状态、输入/输出参数、TX/RX、队列深度、generation、connectionId、read 次数、结束时的未满帧 tail 数和诊断。端点/凭据不持久化；页面不支持明文网络，JVM Mock 测试才显式开启 WS。
-- 手动松开/打断是采集结束边界：不补零发送不足 960 的 tail，当前 tail 计数显示在 Debug Panel；录音期间跨 chunk 余数保持不丢。不能把用户结束一轮时主动丢弃 tail 描述成无损结束，若需要尾音完整保留仍须进一步设计。
+- 第二批历史行为（已由第三批修正）：松开/打断均丢弃不足960的 tail；录音期间跨 chunk 余数保持不丢。当前正常松开行为以第三批为准。
 
 ### 第二批验证
 
@@ -57,3 +57,37 @@
 - Mock E2E 末端是测试 PCM sink；模拟器 AudioTrack 测试独立进行，不将两项拼称“真机端到端对话通过”。
 
 C1/C2/C3 TARGET VALIDATION PENDING；C4 STATIC PASS / Runtime pending，不变。不得据此标记整个 Phase 1C PASS。
+
+## 第三批：正常结束尾帧与模拟器长测
+
+- 正常松开进入 FINISHING，保留已返回的正长度 read，最后不足960 samples只补齐一次；完整帧/零余数不额外发送。取消、打断和断开进入 CANCELLED，不补帧。最终帧仍受 Coordinator generation 校验。
+- accumulator 增加余数0/1/100/959、重复结束、结束后禁止 append 和 reset 回归；Mock WebSocket 验证最终帧先于 listen stop。录音中仍不补零、不丢余数。
+- 新增长测使用真实 DebugAudioSession / AudioRecord / AudioTrack 和本地 HTTPS/WSS Mock。测试只信任自己的 localhost 证书，生产 TLS 校验不变。循环录音、正常松开、播放，并每十轮执行一次硬打断重连。
+- 首次长测在约10秒时失败，尚无上行包。保留 `evidence/reports/emulator-soak-first-attempt.json`。定位 Ready 先于 Hello 消费者初始化，以及异步状态收集可能取消新录音的竞态；改为先完成 Hello 消费再发布 Ready，采集失效由 Coordinator 同步通知。新增回归测试，不延长超时或削弱断言。
+- 修复后 `test lint assembleDebug :app:assembleDebugAndroidTest --offline --no-daemon --console=plain` 成功：core-protocol 44项，core-audio debug/release各20项，总84次，0失败/错误/跳过；app/core-audio lint均0。
+- 长测命令：`adb -s emulator-5556 shell am instrument -w -r -e soakMs 600000 com.aiwatch.probe.test/androidx.test.runner.AndroidJUnitRunner`。失败轮不计入新一轮十分钟时长。
+
+### 长测边界
+
+模拟器以 `-no-audio` 启动，没有主机麦克风输入或听感验收。测试中的下行是16k encoder产生的合成Opus，在Server Hello声明的24k下解码/播放，用于验证软件路径；不是实际24k TTS provider证据，不关闭C4 runtime。真正24k encoder的本地验证仍见第二批JVM Mock测试。
+
+CPU和RSS包括同进程Mock服务及测试框架，不代表产品或CD12Max功耗。录音是连续测试中的多轮短PTT，不是十分钟不间断录音；松开到server stop是控制链延迟，不是端到端可听延迟。AudioTrack underrun原始计数如实保留，不能将有underrun的运行描述成零卡顿。GPU、温度、真实声学质量仍未验收。
+
+### 第三批最终结果
+
+- API28 x86_64，完整 instrumentation `OK (5 tests)`，总602.351秒；长测自身600770ms、738轮、73次硬打断重连、74个连接，无测试失败或已报告音频异常。原始证据：`evidence/reports/emulator-audio-soak.json`。
+- TX4428 / RX3398；服务端解码4250880 samples（4428×960）；listen stop后迟到上行0。正常结束补齐734帧/239760零样本，取消/异常尾样本丢弃0。其余4轮无不足帧尾部。
+- 实际read chunk分布（samples:次数）：1024:3690、400:485、160:225、640:4。encoded/PCM采样峰值均1；记录到的overload和partial-write均0（partial-write逻辑另有JVM测试）。
+- 各连接最后保存的AudioTrack underrun累计1556，**并非零卡顿通过**。短段播放结束后保持play状态及分包供给均可能影响计数，本轮未分离成因，后续参考手机需结合听感和播放时序诊断。
+- 峰值RSS采样137276KiB，进程CPU117798ms，松开至服务端收到stop最长49ms。指标包含测试框架/Mock，非纯App基准；采样RSS不是连续监控的绝对峰值。
+- APK：`app/build/outputs/apk/debug/app-debug.apk`，SHA256 `E4EC4195021E5FDCE10AEAEF458CED163396CD0E69B73C557A851A3C180B352D`。
+
+| 验收层 | 状态 | 限定 |
+|---|---|---|
+| C-A Codec/Queue/Mock WebSocket | PASS | 本地软件逻辑 |
+| C-B API28 Emulator | PASS（软件稳定性） | 十分钟多轮循环；不代表音质/无underrun |
+| C-C Reference phone | PENDING | 真实麦克风/扬声器、听感与长测 |
+| C-D Real Xiaozhi | PENDING | 暂无端点，未验证真实STT/LLM/TTS |
+| C-E CD12Max | TARGET VALIDATION PENDING | ABI/GL/ROM/性能/温度/功耗 |
+
+Phase 0C C4仍为STATIC PASS / Runtime pending；Phase 1C整体仍为IN PROGRESS。首次失败与修复后结果同时保留，未删减原测试。

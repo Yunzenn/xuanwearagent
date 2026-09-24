@@ -12,8 +12,10 @@
 | 真实会话入口尚未联调 | Runtime pending | 已接 Debug Session、AudioRecord/AudioTrack 和 Coordinator；本地 Mock 到 PCM 与模拟器设备 API 分别通过，仍无真实服务端/参考手机会话证据 |
 | 长期运行累积耗尽重试预算 | MITIGATED | 连续 Ready 60 秒才恢复预算；短暂 Ready 不恢复，旧 epoch/connection 的稳定计时器无效。8 次稳定恢复循环回归测试通过 |
 | Codec 自回环不足以证明服务端/设备音频质量 | Phase 1C OPEN | 已补 Mock WebSocket 音频 E2E、queue 竞态和模拟器 AudioTrack flush；仍须参考手机、10 分钟稳定性与 C4 runtime 验证 |
-| 采集结束时不足一帧的尾音 | OPEN | 录音中 accumulator 保留跨 chunk 余数；用户松开/打断时不补零，明确计数并丢弃未满960 tail。参考手机须评估尾音完整性，不能称作无损结束 |
+| 采集结束时不足一帧的尾音 | MITIGATED / Phone pending | 录音中不补零、不丢跨 chunk 余数；正常松开只补齐一次最终960帧，并在 listen stop 前发送；取消/打断不补帧。覆盖余数0/1/100/959和重复结束；可听尾音仍须手机验证 |
 | 音频焦点/来电/慢设备输出 | OPEN | 当前是前台 Debug Session，离开即关；非阻塞写和有界队列避免无限堆积，但没有 stall watchdog/音频焦点策略，过载终止会话 |
+| 模拟器播放underrun | OPEN / Phone pending | 十分钟738轮软件测试通过、队列过载0，但各连接累计underrun1556；未分离段间空闲和有效播放中饥饿，不宣称无卡顿；参考手机须定位并验证听感 |
+| Ready早于播放初始化/异步停止采集竞态 | MITIGATED | 首次长测失败证据保留；Hello消费者初始化先于Ready发布，采集失效改为Coordinator同步通知；新增回归及重新运行完整十分钟通过 |
 | 本地无 Android 工程基线 | CLOSED | Phase 0B 三模块 skeleton、clean build、单元测试及 lint 已通过，审查已通过 |
 | GitHub 仓库动态变化 | P1 | 记录审计日期、commit/ref；依赖版本固定 |
 | 本机构建环境缺失 | CLOSED | 已安装 Platform 35、Build Tools 35.0.0、ADB 37.0.1；Gradle 8.9 clean build 已通过 |

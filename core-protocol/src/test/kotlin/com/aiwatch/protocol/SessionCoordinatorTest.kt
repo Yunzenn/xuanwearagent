@@ -27,6 +27,27 @@ class SessionCoordinatorTest {
     }
     private val ready = BootstrapResult.Ready(WebSocketConfig("wss://example.test/ws", null))
 
+    @Test fun readyIsPublishedOnlyAfterPlaybackConsumerInitialization() = runTest {
+        val transport = FakeTransport()
+        lateinit var coordinator: SessionCoordinator
+        var initialized = false
+        var captureInvalidations = 0
+        coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport,
+            onEvent = { event, _ -> if (event is ProtocolEvent.Hello) {
+                assertEquals(SessionPhase.CONNECTING, coordinator.state.value.phase)
+                initialized = true
+            } }, onCaptureInvalidated = { captureInvalidations++ })
+        coordinator.start(); runCurrent(); transport.hello(); runCurrent()
+        assertTrue(initialized)
+        assertEquals(SessionPhase.READY, coordinator.state.value.phase)
+        val beforeCapture = captureInvalidations
+        assertNotNull(coordinator.beginCapture())
+        assertEquals(beforeCapture, captureInvalidations)
+        transport.failure(); runCurrent()
+        assertTrue(captureInvalidations > beforeCapture)
+        coordinator.close()
+    }
+
     @Test fun uplinkRequiresListeningAndCurrentGeneration() = runTest {
         val transport = FakeTransport()
         val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport)

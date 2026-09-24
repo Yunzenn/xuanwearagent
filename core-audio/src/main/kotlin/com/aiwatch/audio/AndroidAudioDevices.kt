@@ -48,6 +48,7 @@ class AndroidAudioCaptureSource(private val context: Context) : AudioCaptureSour
 class AndroidPcmPlaybackSink(config: PlaybackAudioConfig) : PcmPlaybackSink {
     private val track: AudioTrack
     val isPlaying: Boolean get() = track.playState == AudioTrack.PLAYSTATE_PLAYING
+    override val underrunCount: Int get() = track.underrunCount
     init {
         require(config.channels in 1..2)
         val mask = if (config.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO

@@ -3,8 +3,39 @@ package com.aiwatch.audio
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
 
 class PcmFrameAccumulatorTest {
+    private fun checkFinalTail(size: Int) {
+        val accumulator = PcmFrameAccumulator(960)
+        val input = ShortArray(size) { (it + 1).toShort() }
+        assertEquals(0, accumulator.append(input).size)
+        assertEquals(size, accumulator.bufferedSamples)
+        val final = accumulator.finishUtterance()
+        if (size == 0) assertNull(final) else {
+            val expected = ShortArray(960)
+            input.copyInto(expected)
+            assertContentEquals(expected, final)
+        }
+        assertEquals(0, accumulator.bufferedSamples)
+        assertNull(accumulator.finishUtterance())
+        assertFailsWith<IllegalStateException> { accumulator.append(shortArrayOf(1)) }
+    }
+
+    @Test fun zeroTailDoesNotEmitFinalSilence() = checkFinalTail(0)
+    @Test fun oneSampleTailIsPreservedAndPaddedOnce() = checkFinalTail(1)
+    @Test fun hundredSampleTailIsPreservedAndPaddedOnce() = checkFinalTail(100)
+    @Test fun almostFullTailAddsOnlyOneSilenceSample() = checkFinalTail(959)
+
+    @Test fun resetStartsNewUtteranceWithoutReusingFinalFrame() {
+        val accumulator = PcmFrameAccumulator(960)
+        accumulator.append(shortArrayOf(7))
+        accumulator.finishUtterance()
+        accumulator.reset()
+        assertContentEquals(ShortArray(960) { 8 }, accumulator.append(ShortArray(960) { 8 }).single())
+        assertNull(accumulator.finishUtterance())
+    }
     @Test
     fun arbitraryChunksProduceExactFramesWithoutLossOrPadding() {
         val source = ShortArray(2_017) { it.toShort() }

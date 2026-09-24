@@ -3,22 +3,25 @@ package com.aiwatch.probe
 import com.aiwatch.audio.*
 import com.aiwatch.protocol.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.channels.Channel
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.ConcurrentHashMap
+import okhttp3.OkHttpClient
 
 /** Foreground debug session only. UI owns start/stop intent; coordinator owns protocol state. */
-class DebugAudioSession(private val application: ProbeApplication, endpoint: String) {
+class DebugAudioSession(private val application: ProbeApplication, endpoint: String,
+    client: OkHttpClient = OkHttpClient()) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val transport = WebSocketTransport()
+    private val transport = WebSocketTransport(client)
     private val audioLock = Any()
     @Volatile private var playback: PlaybackQueue? = null
     @Volatile private var playbackConfig: PlaybackAudioConfig? = null
     @Volatile private var capture: AndroidAudioCaptureSource? = null
     @Volatile var audioError: String? = null
         private set
-    private val talking = AtomicBoolean(false)
+    private enum class CaptureState { RECORDING, FINISHING, CANCELLED }
+    private val captureState = AtomicReference(CaptureState.CANCELLED)
     private var captureJob: Job? = null
     private var playbackJob: Job? = null
     private var playbackWake: Channel<Unit>? = null
@@ -26,59 +29,76 @@ class DebugAudioSession(private val application: ProbeApplication, endpoint: Str
     val rxPackets = AtomicLong()
     val readChunks = AtomicLong()
     val discardedTailSamples = AtomicLong()
-    private val bootstrap = BootstrapRepository()
+    val paddedFinalFrames = AtomicLong()
+    val paddingSamples = AtomicLong()
+    private val chunks = ConcurrentHashMap<Int, AtomicLong>()
+    fun readChunkHistogram(): Map<Int, Long> = chunks.mapValues { it.value.get() }
+    val playbackMetrics get() = playback?.metrics
+    private val bootstrap = BootstrapRepository(client)
     val coordinator = SessionCoordinator(scope, { application.identityStore.getOrCreate() }, {
         bootstrap.fetch(endpoint, it, "phase1c-debug")
-    }, transport, onEvent = ::onEvent, flushAudio = ::flush)
+    }, transport, onEvent = ::onEvent, flushAudio = ::flush, onCaptureInvalidated = ::stopTalking)
     val state get() = coordinator.state
     val output get() = playbackConfig
     val queueDepth get() = playback?.let { "${it.encodedDepth} encoded / ${it.pcmDepth} PCM" } ?: "0"
-
-    init {
-        scope.launch {
-            state.collect { if (it.phase != SessionPhase.READY) stopTalking() }
-        }
-    }
 
     fun connect() { scope.launch { coordinator.start() } }
 
     // Called from Main thread: one capture job at a time; never start mic just from Connect.
     fun startTalking() {
         if (captureJob?.isActive == true || state.value.phase != SessionPhase.READY) return
-        talking.set(true)
+        captureState.set(CaptureState.RECORDING)
         captureJob = scope.launch {
             val source = AndroidAudioCaptureSource(application)
             var generation: Long? = null
+            var pendingFinalTail = 0
             val accumulator = PcmFrameAccumulator(960)
             try {
                 val config = playbackConfig ?: return@launch
                 val encoder = ConcentusOpusCodec(config)
                 capture = source
                 source.start()
-                if (!talking.get()) return@launch
+                if (captureState.get() != CaptureState.RECORDING) return@launch
                 generation = coordinator.beginCapture() ?: return@launch
                 val buffer = ShortArray(1024)
-                while (isActive && talking.get()) {
+                while (isActive && captureState.get() == CaptureState.RECORDING) {
                     val count = source.read(buffer)
-                    if (!talking.get()) break
+                    if (captureState.get() == CaptureState.CANCELLED) break
+                    // stop() may unblock read with no samples. Positive in-flight reads are preserved.
+                    if (count <= 0 && captureState.get() == CaptureState.FINISHING) break
                     check(count > 0) { "Capture read failed" }
                     readChunks.incrementAndGet()
+                    chunks.getOrPut(count) { AtomicLong() }.incrementAndGet()
                     for (frame in accumulator.append(buffer, length = count)) {
-                        if (!talking.get()) break
+                        if (captureState.get() == CaptureState.CANCELLED) break
                         check(coordinator.sendAudio(encoder.encodeUplink(frame), generation)) { "Uplink rejected" }
                         txPackets.incrementAndGet()
                     }
                 }
+                if (isActive && captureState.get() == CaptureState.FINISHING) {
+                    val tail = accumulator.bufferedSamples
+                    accumulator.finishUtterance()?.let { frame ->
+                        pendingFinalTail = tail
+                        // Coordinator also checks generation: an intervening interrupt cannot replay this frame.
+                        if (captureState.get() != CaptureState.CANCELLED) {
+                            check(coordinator.sendAudio(encoder.encodeUplink(frame), generation)) { "Final uplink rejected" }
+                            txPackets.incrementAndGet()
+                            pendingFinalTail = 0
+                            paddedFinalFrames.incrementAndGet()
+                            paddingSamples.addAndGet((960 - tail).toLong())
+                        }
+                    }
+                }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) {
-                if (talking.get()) {
+                if (captureState.get() != CaptureState.CANCELLED) {
                     audioError = "Capture/encode/send failed; inspect device support and microphone permission"
                     coordinator.stop()
                 }
             } finally {
-                // Manual end-of-turn discards only an incomplete tail, explicitly counted; never pad it.
-                discardedTailSamples.addAndGet(accumulator.bufferedSamples.toLong())
-                talking.set(false)
+                // Only cancellation/error can discard pending PCM. Normal release finalized above.
+                discardedTailSamples.addAndGet(accumulator.bufferedSamples.toLong() + pendingFinalTail)
+                captureState.set(CaptureState.CANCELLED)
                 runCatching { source.close() }
                 capture = null
                 generation?.let { withContext(NonCancellable) { runCatching { coordinator.endCapture(it) } } }
@@ -86,7 +106,11 @@ class DebugAudioSession(private val application: ProbeApplication, endpoint: Str
         }
     }
 
-    fun stopTalking() { talking.set(false); runCatching { capture?.stop() } }
+    fun finishTalking() {
+        captureState.compareAndSet(CaptureState.RECORDING, CaptureState.FINISHING)
+        runCatching { capture?.stop() }
+    }
+    fun stopTalking() { captureState.set(CaptureState.CANCELLED); runCatching { capture?.stop() } }
     fun interrupt() { stopTalking(); scope.launch { coordinator.abort() } }
 
     private fun flush() {
@@ -135,9 +159,9 @@ class DebugAudioSession(private val application: ProbeApplication, endpoint: Str
     }
 
     /** Called on foreground loss. No background recording or reconnect survives this session. */
-    fun close() {
+    fun close(): Job {
         stopTalking()
-        scope.launch {
+        return scope.launch {
             try {
                 coordinator.close()
                 captureJob?.cancelAndJoin(); playbackJob?.cancelAndJoin()

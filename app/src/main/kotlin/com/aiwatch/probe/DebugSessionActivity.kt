@@ -54,7 +54,7 @@ class DebugSessionActivity : Activity() {
                             } else session?.startTalking()
                             true
                         }
-                        MotionEvent.ACTION_UP -> { session?.stopTalking(); view.performClick(); true }
+                        MotionEvent.ACTION_UP -> { session?.finishTalking(); view.performClick(); true }
                         MotionEvent.ACTION_CANCEL -> { session?.stopTalking(); true }
                         else -> true
                     }
@@ -83,7 +83,8 @@ class DebugSessionActivity : Activity() {
                         active.txPackets.get(), active.rxPackets.get(), active.queueDepth,
                         state.generation, state.connectionId?.toString() ?: "—",
                         active.readChunks.get(), active.discardedTailSamples.get(),
-                        active.audioError ?: state.diagnostic ?: "—", state.activationCode ?: "—")
+                        active.audioError ?: state.diagnostic ?: "—", state.activationCode ?: "—",
+                        active.paddedFinalFrames.get(), active.paddingSamples.get())
                 }
                 delay(200)
             }

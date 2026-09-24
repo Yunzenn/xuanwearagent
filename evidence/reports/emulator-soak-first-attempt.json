@@ -1,0 +1,14 @@
+{
+  "status": "FAIL",
+  "elapsedMs": 10269,
+  "cycles": 0,
+  "interrupts": 0,
+  "txPackets": 0,
+  "rxPackets": 0,
+  "paddedFinalFrames": 0,
+  "discardedTailSamples": 0,
+  "latePacketsAfterStop": 0,
+  "audioError": null,
+  "failure": "Timeout: capture frames; SessionSnapshot(phase=READY, generation=1, retry=0)",
+  "diagnosis": "Ready was visible before the playback consumer initialized; asynchronous state-based capture cancellation could also cancel a new capture. Fixed by initializing Hello consumer before publishing Ready and serializing capture invalidation in the coordinator."
+}

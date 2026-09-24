@@ -8,7 +8,7 @@
     <string name="debug_disconnected">Disconnected. Microphone is off.</string>
     <string name="debug_https_required">Enter a valid HTTPS Bootstrap endpoint without user credentials or fragment.</string>
     <string name="debug_hold_instruction">Hold to record; release to stop. After granting permission, press again.</string>
-    <string name="debug_status">Connection: %1$s\nConversation: %2$s\nInput: 16000 Hz / mono\nOutput: %3$s Hz / %4$s channel(s)\nTX: %5$d / RX: %6$d\nQueue: %7$s\nGeneration: %8$d\nConnectionId: %9$s\nRead chunks: %10$d\nDiscarded end-of-turn tail samples: %11$d\nDiagnostic: %12$s\nActivation code: %13$s</string>
+    <string name="debug_status">Connection: %1$s\nConversation: %2$s\nInput: 16000 Hz / mono\nOutput: %3$s Hz / %4$s channel(s)\nTX: %5$d / RX: %6$d\nQueue: %7$s\nGeneration: %8$d\nConnectionId: %9$s\nRead chunks: %10$d\nCancelled/error tail samples: %11$d\nDiagnostic: %12$s\nActivation code: %13$s\nPadded final frames: %14$d\nPadding samples: %15$d</string>
     <string name="reset_identity">Reset device identity</string>
     <string name="reset_identity_warning">This changes the device identity and requires binding the device again on your server. Previous identity data will be preserved locally for diagnosis. Continue?</string>
     <string name="reset_identity_failed">Identity reset failed. Previous data is preserved; inspect storage before retrying.</string>

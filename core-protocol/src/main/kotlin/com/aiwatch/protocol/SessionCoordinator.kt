@@ -32,6 +32,7 @@ class SessionCoordinator(
     private val interruptPolicy: InterruptPolicy = HardInterruptPolicy,
     private val onEvent: (ProtocolEvent, Long) -> Unit = { _, _ -> },
     private val flushAudio: () -> Unit = {},
+    private val onCaptureInvalidated: () -> Unit = {},
 ) {
     private sealed interface Command {
         data object Start : Command
@@ -115,6 +116,7 @@ class SessionCoordinator(
             publish(SessionPhase.ERROR, "Session consumer or lifecycle failure")
         } finally {
             worker?.cancel(); receiver?.cancel(); stabilityTimer?.cancel()
+            runCatching { onCaptureInvalidated() }
             runCatching { flushAudio() }
             runCatching { transport.close() }; commands.close()
         }
@@ -159,7 +161,7 @@ class SessionCoordinator(
         return generation
     }
     private fun invalidateAudio() {
-        generation++; conversation.disconnected(); flushAudio()
+        generation++; conversation.disconnected(); onCaptureInvalidated(); flushAudio()
     }
     private fun retire() {
         epoch++; worker?.cancel(); receiver?.cancel(); stabilityTimer?.cancel(); currentConnection = null
@@ -231,6 +233,8 @@ class SessionCoordinator(
             }
             is SocketEvent.Message -> when (val payload = event.event) {
                 is ProtocolEvent.Hello -> {
+                    // Consumers must finish configuring playback before UI/capture can observe Ready.
+                    onEvent(payload, generation)
                     publish(SessionPhase.READY)
                     stabilityTimer?.cancel()
                     val stableEpoch = epoch
@@ -239,7 +243,6 @@ class SessionCoordinator(
                         delay(retryPolicy.stableConnectionMs)
                         commands.send(Command.Stable(stableEpoch, stableConnection))
                     }
-                    onEvent(payload, generation)
                 }
                 is ProtocolEvent.BinaryAudio -> if (conversation.acceptsAudio(conversation.generation)) onEvent(payload, generation)
                 is ProtocolEvent.Tts -> when (payload.phase) {

@@ -35,7 +35,7 @@ Phase 0C 状态：**未完成。C1/C2/C3 TARGET VALIDATION PENDING，C4 STATIC P
 
 状态：**IN PROGRESS**。JVM 单测、模拟器 API 28、参考手机与 CD12Max 四层证据独立记录；软件通过不代表目标机通过。
 
-Phase 1A：PASS WITH CONDITIONS（用户审查）。Phase 1B：已完成 SessionCoordinator、有限退避/认证刷新、集中旧事件过滤、验证码激活轮询、确认后身份恢复、TLS 负向测试及 APK ABI 审计。38 个 core-protocol 测试通过；API 28 模拟器实际进程重启身份一致性通过。验证码模式仅本地自动测试，真实服务端激活、完整应用会话入口仍待联调；challenge-only 硬件 HMAC 模式不支持。详见 PHASE_1B_REPORT.md。Phase 1C 音频链未开始。
+Phase 1A：PASS WITH CONDITIONS（用户审查）。Phase 1B：已完成 SessionCoordinator、有限退避/认证刷新、集中旧事件过滤、验证码激活轮询、确认后身份恢复、TLS 负向测试及 APK ABI 审计。38 个 core-protocol 测试通过；API 28 模拟器实际进程重启身份一致性通过。验证码模式仅本地自动测试，真实服务端激活、完整应用会话入口仍待联调；challenge-only 硬件 HMAC 模式不支持。详见 PHASE_1B_REPORT.md。以上为Phase 1B历史快照；当前Phase 1C本地链及模拟器长测已通过，真实设备/服务器待验收，见下文。
 
 1. DeviceIdentity + DataStore 重启持久化测试
 2. BootstrapRepository（OTA/activation/WS token）
@@ -64,4 +64,14 @@ Phase 1A 已通过；Phase 1B 用户审查通过，minor follow-up 已落地：�
 - [x] 最小 Debug Session 页面（状态、按住说话、打断、包数、队列、generation/connectionId；启动关闭 smoke test）
 - [ ] 参考手机 mic → codec → mock/server → codec → speaker
 
-当前不是 Phase 1C PASS；详见 PHASE_1C_REPORT.md。CD12Max 与 C4 runtime Gate 不变。
+当前不是 Phase 1C 整体验收 PASS；本地软件纵向链已获用户认可。详见 PHASE_1C_REPORT.md。CD12Max 与 C4 runtime Gate 不变。
+
+本轮补充：正常 PTT 松开仅补齐一个最终 960-sample 帧；取消/打断不补帧。新增 API 28 本地 HTTPS/WSS 音频长测，参考手机与真实服务器证据独立验收。
+
+- [x] 正常结束尾帧0/1/100/959、重复结束及wire-order回归
+- [x] Hello消费者初始化完成才发布Ready；集中同步采集失效通知
+- [x] API28模拟器600770ms、738轮、73次打断重连，Android测试5/5；JVM执行84/84
+- [ ] 参考手机诊断underrun和可听连续性（模拟器累计1556，未宣称零卡顿）
+- [ ] 真实Xiaozhi STT/LLM/TTS联调，暂无端点
+
+C-A本地软件PASS；C-B模拟器软件稳定性PASS；C-C参考手机PENDING；C-D真实服务器PENDING；C-E CD12Max TARGET VALIDATION PENDING。

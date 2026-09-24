@@ -5,9 +5,13 @@ import java.util.ArrayDeque
 
 /** write must be nonblocking; implementations return the number of interleaved PCM samples written. */
 interface PcmPlaybackSink : Closeable {
+    val underrunCount: Int get() = 0
     fun write(pcm: ShortArray, offset: Int, length: Int): Int
     fun pauseAndFlush()
 }
+
+data class PlaybackMetrics(val maxEncodedDepth: Int, val maxPcmDepth: Int,
+    val partialWrites: Long, val overloads: Long, val underruns: Int, val writtenSamples: Long)
 
 /**
  * One worker calls pump(). Producers may offer/end/flush concurrently.
@@ -30,6 +34,14 @@ class PlaybackQueue(
     private var accepting = false
     private var closed = false
     private var decoding = false
+    private var encodedPeak = 0
+    private var pcmPeak = 0
+    private var partialWrites = 0L
+    private var overloads = 0L
+    private var writtenSamples = 0L
+    val metrics: PlaybackMetrics get() = synchronized(lock) {
+        PlaybackMetrics(encodedPeak, pcmPeak, partialWrites, overloads, if (closed) 0 else sink.underrunCount, writtenSamples)
+    }
     val encodedDepth: Int get() = synchronized(lock) { encoded.size }
     val pcmDepth: Int get() = synchronized(lock) { pcm.size }
     val idle: Boolean get() = synchronized(lock) { !decoding && encoded.isEmpty() && pcm.isEmpty() }
@@ -43,9 +55,11 @@ class PlaybackQueue(
 
     /** False indicates closed gate, stale generation or backpressure; caller must not silently drop. */
     fun offer(packet: ByteArray, generation: Long): Boolean = synchronized(lock) {
-        if (closed || !accepting || generation != this.generation || encoded.size >= maxEncodedPackets ||
+        if (closed || !accepting || generation != this.generation ||
             packet.isEmpty() || packet.size > 65536) return@synchronized false
+        if (encoded.size >= maxEncodedPackets) { overloads++; return@synchronized false }
         encoded.addLast(packet.copyOf())
+        encodedPeak = maxOf(encodedPeak, encoded.size)
         true
     }
 
@@ -74,7 +88,9 @@ class PlaybackQueue(
             try {
                 val decoded = decode(job.second)
                 synchronized(lock) {
-                    if (!closed && job.first == epoch) pcm.addLast(Pcm(decoded))
+                    if (!closed && job.first == epoch) {
+                        pcm.addLast(Pcm(decoded)); pcmPeak = maxOf(pcmPeak, pcm.size)
+                    }
                 }
             } finally { synchronized(lock) { decoding = false } }
         }
@@ -84,6 +100,8 @@ class PlaybackQueue(
             val remaining = head.data.size - head.offset
             val written = sink.write(head.data, head.offset, remaining)
             check(written in 0..remaining) { "Playback write failed" }
+            if (written < remaining) partialWrites++
+            writtenSamples += written
             head.offset += written
             if (head.offset == head.data.size) pcm.removeFirst()
         }
