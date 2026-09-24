@@ -10,6 +10,8 @@
 | 激活模式与真实服务端不匹配 | Runtime pending | 支持验证码展示/有界 Bootstrap 轮询至 credentials；challenge-only 明确失败，不伪造 ESP32 HMAC；暂无服务器地址 |
 | 身份存储损坏导致重新绑定 | MITIGATED | 默认报错不换号；只有明确确认后重置，保存原始文件。API 28 两次独立进程持久化通过 |
 | Coordinator 尚未接入产品会话入口 | OPEN | 本轮单元/回环验证不等于完整 App 或真实语音 E2E；音频 sink 当前为契约回调 |
+| 长期运行累积耗尽重试预算 | MITIGATED | 连续 Ready 60 秒才恢复预算；短暂 Ready 不恢复，旧 epoch/connection 的稳定计时器无效。8 次稳定恢复循环回归测试通过 |
+| Codec 自回环不足以证明服务端/设备音频质量 | Phase 1C OPEN | 冻结 Concentus 编解码与分帧测试通过；仍须独立音频 E2E、AudioTrack flush、参考手机和 C4 runtime 验证 |
 | 本地无 Android 工程基线 | CLOSED | Phase 0B 三模块 skeleton、clean build、单元测试及 lint 已通过，审查已通过 |
 | GitHub 仓库动态变化 | P1 | 记录审计日期、commit/ref；依赖版本固定 |
 | 本机构建环境缺失 | CLOSED | 已安装 Platform 35、Build Tools 35.0.0、ADB 37.0.1；Gradle 8.9 clean build 已通过 |

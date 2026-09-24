@@ -17,6 +17,8 @@
 
 ## Freeze rules
 
+Phase 1C 落地：上述 Concentus candidate 已转为固定源码依赖，冻结 SHA 不变。`third_party/concentus` 保存 `git archive` 导出的未修改 Java 源码及 LICENSE；构建哈希校验、编译并依赖生成 JAR，未重写 codec。细节见该目录 README 与 LICENSE_MATRIX.md。
+
 - 依赖或参考升级到不同 commit/tag 前必须重新审计。
 - 没有明确 LICENSE 的仓库一律 REFERENCE ONLY。
 - 任何复制的 MIT/Apache/BSD 源码都保留文件版权头，并在发行包中附带相应许可证/NOTICE 要求。

@@ -48,3 +48,20 @@ Phase 1A：PASS WITH CONDITIONS（用户审查）。Phase 1B：已完成 Session
 9. API 28 构建、真机安装、10 分钟稳定性测试
 
 Phase 1 明确不做：完整 UI、Live2D、Avatar importer、Character、MCP、本地 LLM/ASR、wake word、Root/Shizuku。
+
+## Phase 1C — Audio vertical slice（IN PROGRESS）
+
+Phase 1A 已通过；Phase 1B 用户审查通过，minor follow-up 已落地：稳定 Ready 60 秒恢复 retry budget，短暂 Ready 不恢复；HardInterruptPolicy / ActivationPolicy 已提取，未实现 SoftInterruptPolicy。
+
+- [x] 稳定恢复/快速抖动/旧稳定计时器/可注入打断策略回归测试
+- [x] 固定 Concentus 原始源码依赖与归档哈希、随包 LICENSE
+- [x] OpusCodec / ConcentusOpusCodec；16k mono 960-sample 上行，显式 playback config 下行
+- [x] 真实 Opus 编解码、不同采样率/声道、任意 chunk 分帧与 reset 测试
+- [ ] AudioCaptureSource / AudioRecord 权限、初始化与线程生命周期
+- [ ] Coordinator 上行音频入口与 generation 隔离
+- [ ] encoded / PCM 有界队列、AudioTrack 输出与真实 pause/flush
+- [ ] Mock WebSocket E2E：Hello → tts:start → 合法 Opus → PCM → tts:stop
+- [ ] 最小 Debug Session 页面（状态、按住说话、打断、包数、队列、generation/connectionId）
+- [ ] 参考手机 mic → codec → mock/server → codec → speaker
+
+当前不是 Phase 1C PASS；详见 PHASE_1C_REPORT.md。CD12Max 与 C4 runtime Gate 不变。

@@ -26,6 +26,74 @@ class SessionCoordinatorTest {
     }
     private val ready = BootstrapResult.Ready(WebSocketConfig("wss://example.test/ws", null))
 
+    @Test fun stableRecoveryRestoresBudgetAcrossRepeatedLongLivedConnections() = runTest {
+        val transport = FakeTransport()
+        val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport,
+            RetryPolicy(maxRetries = 1, stableConnectionMs = 60000, jitter = { 1.0 }))
+        coordinator.start(); runCurrent(); transport.hello(); runCurrent()
+        repeat(8) {
+            transport.failure(); runCurrent()
+            assertEquals(1, coordinator.state.value.retry)
+            advanceTimeBy(1000); runCurrent(); transport.hello(); runCurrent()
+            assertEquals(1, coordinator.state.value.retry)
+            advanceTimeBy(59999); runCurrent()
+            assertEquals(1, coordinator.state.value.retry)
+            advanceTimeBy(1); runCurrent()
+            assertEquals(SessionPhase.READY, coordinator.state.value.phase)
+            assertEquals(0, coordinator.state.value.retry)
+        }
+        assertEquals(9L, transport.connections)
+        coordinator.close()
+    }
+
+    @Test fun brieflyReadyConnectionsCannotResetRetryBudget() = runTest {
+        val transport = FakeTransport()
+        val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport,
+            RetryPolicy(maxRetries = 1, stableConnectionMs = 60000, jitter = { 1.0 }))
+        coordinator.start(); runCurrent(); transport.hello(); runCurrent()
+        transport.failure(); runCurrent(); advanceTimeBy(1000); runCurrent()
+        transport.hello(); runCurrent(); advanceTimeBy(59000); runCurrent()
+        transport.failure(); runCurrent()
+        assertEquals(SessionPhase.ERROR, coordinator.state.value.phase)
+        advanceTimeBy(120000); runCurrent()
+        assertEquals(SessionPhase.ERROR, coordinator.state.value.phase)
+        assertEquals(2L, transport.connections)
+        coordinator.close()
+    }
+
+    @Test fun retiredConnectionStabilityTimerCannotResetNewRetryWait() = runTest {
+        val transport = FakeTransport()
+        val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport,
+            RetryPolicy(stableConnectionMs = 60000, jitter = { 1.0 }))
+        coordinator.start(); runCurrent(); transport.hello(); runCurrent()
+        advanceTimeBy(59999); runCurrent(); transport.failure(); runCurrent()
+        advanceTimeBy(1); runCurrent()
+        assertEquals(SessionPhase.RETRY_WAIT, coordinator.state.value.phase)
+        assertEquals(1, coordinator.state.value.retry)
+        coordinator.stop(); advanceTimeBy(120000); runCurrent()
+        assertEquals(SessionPhase.STOPPED, coordinator.state.value.phase)
+        assertEquals(1L, transport.connections)
+        coordinator.close()
+    }
+
+    @Test fun interruptDelegatesToInjectedPolicy() = runTest {
+        var invocations = 0
+        val transport = FakeTransport()
+        val policy = object : InterruptPolicy {
+            override fun interrupt(context: InterruptContext) {
+                invocations++
+                HardInterruptPolicy.interrupt(context)
+            }
+        }
+        val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport,
+            interruptPolicy = policy)
+        coordinator.start(); runCurrent(); transport.hello(); runCurrent()
+        coordinator.abort(); runCurrent()
+        assertEquals(1, invocations)
+        assertEquals(2L, transport.connections)
+        coordinator.close()
+    }
+
     @Test fun consumerFailureClosesTransportWithoutHangingShutdown() = runTest {
         val transport = FakeTransport()
         val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, { ready }, transport,
@@ -121,7 +189,7 @@ class SessionCoordinatorTest {
             val transport = FakeTransport()
             val coordinator = SessionCoordinator(backgroundScope, { DeviceIdentity.generate() }, {
                 BootstrapResult.ActivationRequired(ActivationInfo(code, null, "challenge", 30000))
-            }, transport, maxActivationPolls = 1)
+            }, transport, activationPolicy = ActivationPolicy(maxPolls = 1))
             coordinator.start(); runCurrent(); advanceTimeBy(3000); runCurrent()
             assertEquals(SessionPhase.ERROR, coordinator.state.value.phase)
             assertEquals(0L, transport.connections)

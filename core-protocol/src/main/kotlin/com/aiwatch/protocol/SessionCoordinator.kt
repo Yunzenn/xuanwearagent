@@ -5,16 +5,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.selects.select
-import kotlin.random.Random
-
-data class RetryPolicy(val maxRetries: Int = 5, val jitter: () -> Double = { Random.nextDouble() }) {
-    init { require(maxRetries in 0..10) }
-    fun delayMs(attempt: Int): Long {
-        require(attempt in 1..maxRetries)
-        val ceiling = minOf(15_000L, 1000L shl (attempt - 1))
-        return (ceiling * (0.5 + jitter().coerceIn(0.0, 1.0) * 0.5)).toLong()
-    }
-}
 
 enum class SessionPhase { STOPPED, IDENTITY, BOOTSTRAP, ACTIVATING, CONNECTING, READY, RETRY_WAIT, AUTH_REQUIRED, ERROR }
 data class SessionSnapshot(
@@ -37,12 +27,11 @@ class SessionCoordinator(
     private val bootstrap: suspend (DeviceIdentity) -> BootstrapResult,
     private val transport: SessionTransport,
     private val retryPolicy: RetryPolicy = RetryPolicy(),
-    private val activationPollMs: Long = 3000,
-    private val maxActivationPolls: Int = 60,
+    private val activationPolicy: ActivationPolicy = ActivationPolicy(),
+    private val interruptPolicy: InterruptPolicy = HardInterruptPolicy,
     private val onEvent: (ProtocolEvent, Long) -> Unit = { _, _ -> },
     private val flushAudio: () -> Unit = {},
 ) {
-    init { require(activationPollMs > 0 && maxActivationPolls > 0) }
     private sealed interface Command {
         data object Start : Command
         data class Stop(val done: CompletableDeferred<Unit>) : Command
@@ -51,6 +40,7 @@ class SessionCoordinator(
         data class Failed(val epoch: Long, val message: String) : Command
         data class Inbound(val epoch: Long, val event: SocketEvent) : Command
         data class Retry(val epoch: Long) : Command
+        data class Stable(val epoch: Long, val connectionId: Long) : Command
         data class Listen(val start: Boolean) : Command
         data object Abort : Command
         data class Shutdown(val done: CompletableDeferred<Unit>) : Command
@@ -68,6 +58,7 @@ class SessionCoordinator(
     private var active = false
     private var worker: Job? = null
     private var receiver: Job? = null
+    private var stabilityTimer: Job? = null
     private val actor = scope.launch {
         try {
             for (command in commands) when (command) {
@@ -90,6 +81,11 @@ class SessionCoordinator(
                 }
                 is Command.Failed -> if (active && command.epoch == epoch) fail(command.message)
                 is Command.Retry -> if (active && command.epoch == epoch) beginBootstrap()
+                is Command.Stable -> if (active && command.epoch == epoch &&
+                    command.connectionId == currentConnection && mutableState.value.phase == SessionPhase.READY) {
+                    retries = 0
+                    publish(SessionPhase.READY)
+                }
                 is Command.Inbound -> if (active && command.epoch == epoch && command.event.connectionId == currentConnection) handleEvent(command.event)
                 is Command.Listen -> if (mutableState.value.phase == SessionPhase.READY) {
                     if (command.start && conversation.state == ConversationState.IDLE && transport.listen(true)) {
@@ -98,8 +94,11 @@ class SessionCoordinator(
                     else if (!command.start && conversation.state == ConversationState.LISTENING && transport.listen(false)) conversation.stopListening()
                 }
                 Command.Abort -> if (mutableState.value.phase == SessionPhase.READY) {
-                    // v1 cannot distinguish late turns: retire the socket before opening a new turn.
-                    invalidateAudio(); transport.abort(); beginBootstrap()
+                    interruptPolicy.interrupt(object : InterruptContext {
+                        override fun invalidateAndFlushAudio() = invalidateAudio()
+                        override fun sendAbort() { transport.abort() }
+                        override fun reconnect() = beginBootstrap()
+                    })
                 }
             }
         } catch (cancelled: CancellationException) { throw cancelled }
@@ -107,7 +106,8 @@ class SessionCoordinator(
             active = false; currentConnection = null; generation++
             publish(SessionPhase.ERROR, "Session consumer or lifecycle failure")
         } finally {
-            worker?.cancel(); receiver?.cancel(); runCatching { transport.close() }; commands.close()
+            worker?.cancel(); receiver?.cancel(); stabilityTimer?.cancel()
+            runCatching { transport.close() }; commands.close()
         }
     }
 
@@ -133,7 +133,7 @@ class SessionCoordinator(
         generation++; conversation.disconnected(); flushAudio()
     }
     private fun retire() {
-        epoch++; worker?.cancel(); receiver?.cancel(); currentConnection = null
+        epoch++; worker?.cancel(); receiver?.cancel(); stabilityTimer?.cancel(); currentConnection = null
         invalidateAudio(); transport.disconnect()
     }
     private fun stopInternal() { active = false; retire(); publish(SessionPhase.STOPPED) }
@@ -167,11 +167,11 @@ class SessionCoordinator(
             }
             is BootstrapResult.ActivationRequired -> {
                 if (result.activation.code.isNullOrBlank()) { fail("Unsupported activation challenge: no binding code"); return }
-                if (++activationPolls > maxActivationPolls) { fail("Activation polling exhausted"); return }
+                if (++activationPolls > activationPolicy.maxPolls) { fail("Activation polling exhausted"); return }
                 publish(SessionPhase.ACTIVATING, code = result.activation.code)
                 val pollEpoch = epoch
                 worker = scope.launch {
-                    delay(activationPollMs)
+                    delay(activationPolicy.pollIntervalMs)
                     try { commands.send(Command.Boot(pollEpoch, command.id, bootstrap(command.id))) }
                     catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { commands.send(Command.Failed(pollEpoch, "Activation polling failed")) }
@@ -201,7 +201,17 @@ class SessionCoordinator(
                 else -> fail("Terminal transport failure: ${event.kind}")
             }
             is SocketEvent.Message -> when (val payload = event.event) {
-                is ProtocolEvent.Hello -> { publish(SessionPhase.READY); onEvent(payload, generation) }
+                is ProtocolEvent.Hello -> {
+                    publish(SessionPhase.READY)
+                    stabilityTimer?.cancel()
+                    val stableEpoch = epoch
+                    val stableConnection = event.connectionId
+                    stabilityTimer = scope.launch {
+                        delay(retryPolicy.stableConnectionMs)
+                        commands.send(Command.Stable(stableEpoch, stableConnection))
+                    }
+                    onEvent(payload, generation)
+                }
                 is ProtocolEvent.BinaryAudio -> if (conversation.acceptsAudio(conversation.generation)) onEvent(payload, generation)
                 is ProtocolEvent.Tts -> when (payload.phase) {
                     ProtocolEvent.Tts.Phase.START -> if (conversation.ttsStarted()) onEvent(payload, generation)

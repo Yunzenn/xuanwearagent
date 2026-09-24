@@ -13,3 +13,5 @@
 | `stixez/droid-mcp@aeaa5b9...` | `/LICENSE` | Apache-2.0 | 若以后引入，保留许可证/NOTICE 和修改说明。 |
 
 说明：本矩阵不是法律意见。第三方依赖和用户导入模型资产仍需独立审查。
+
+Phase 1C Concentus 采用记录：`third_party/concentus/concentus-3885c4e-java.zip` 为冻结 commit 的原始 Java 源码和 LICENSE 归档，未修改 codec，所有原文件版权头保留。生成 JAR 包含 `META-INF/concentus/LICENSE`；APK 分发材料为 `assets/licenses/concentus-LICENSE.txt`。没有引入仓库的原生 Opus 预编译二进制。

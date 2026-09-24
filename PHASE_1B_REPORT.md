@@ -2,6 +2,8 @@
 
 日期：2026-09-25。状态：本地软件验证通过，真实服务端/应用会话集成仍待完成；不宣称 Phase 1 全部 PASS。Phase 1C 未开始。
 
+后续审查：用户已批准 Phase 1B。以下是当时的历史快照；Phase 1C 已开始，并将 retry budget 改为连续稳定 Ready 60 秒后恢复，提取 HardInterruptPolicy 与 ActivationPolicy。最新状态见 PHASE_1C_REPORT.md。
+
 ## 实现与约束
 
 - `SessionCoordinator` 单 actor 统一管理 Bootstrap、连接、ConversationStateMachine、epoch/connectionId/generation。生产 Transport 继续单连接，不承担重连策略。
