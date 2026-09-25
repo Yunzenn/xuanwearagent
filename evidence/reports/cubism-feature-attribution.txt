@@ -1,0 +1,130 @@
+﻿=== P2B-RUNTIME: two-model smoke + per-feature attribution (A/B control) ===
+utc=2026-09-25T18:47:43.6745271+08:00
+device model=LENOVO L79031 abi=x86_64 sdk=28
+pageSize=KernelPageSize: 4 kB
+apk sha256=710BCF176A9DD330C268B1222FBA5D1CBE17557DA646212EC464B1A2FCF1B241
+androidTestApk sha256=E9998C1603BC4C2880E1417FBE03C914D6C6B2F6AD6D469970D7E9FD6226228C
+
+########## RUN 1 ##########
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=
+com.aiwatch.smoke.RuntimeSmokeTest:
+INSTRUMENTATION_STATUS: test=featureAttribution
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=featureAttribution
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=twoModelSmoke
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=twoModelSmoke
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 105.612
+
+OK (2 tests)
+
+
+INSTRUMENTATION_CODE: -1
+--- CubismSmoke ---
+--------- beginning of main
+--------- beginning of system
+09-26 02:48:00.869  3412  3429 I CubismSmoke: BIND parameters=42 parts=19 schedulerUpdaters=6
+09-26 02:48:00.870  3412  3429 I CubismSmoke: DECLARED eyeBlinkUpdater owns=[ParamEyeLOpen, ParamEyeROpen]
+09-26 02:48:00.870  3412  3429 I CubismSmoke: DECLARED breathUpdater owns=[ParamAngleX, ParamAngleY, ParamAngleZ, ParamBodyAngleX, ParamBreath]
+09-26 02:48:00.870  3412  3429 I CubismSmoke: DECLARED poseUpdater owns 4 partGroups=[Part01ArmRA001, Part01ArmRB001, Part01ArmLA001, Part01ArmLB001]
+09-26 02:48:00.883  3412  3433 I CubismSmoke: DECLARED model3.json EyeBlinkGroup=[ParamEyeLOpen, ParamEyeROpen] expressions=8
+09-26 02:48:00.883  3412  3429 I CubismSmoke: SCHEDULER updaters=[CubismEyeBlinkUpdater, CubismExpressionUpdater, CubismLookUpdater, CubismBreathUpdater, CubismPhysicsUpdater, CubismPoseUpdater]
+09-26 02:48:10.546  3412  3429 I CubismSmoke: AB subsystem=CubismEyeBlinkUpdater noiseFloorParams=11/42 attributable=3 frozenToZero=2 recoveredAfterRestore=3 declaredOwnershipHits=2 footprint=[ParamAngleZ: 15.6443->4.2000, ParamEyeLOpen: 0.9956->0.0000, ParamEyeROpen: 0.9956->0.0000]
+09-26 02:48:20.213  3412  3429 I CubismSmoke: AB subsystem=CubismBreathUpdater noiseFloorParams=14/42 attributable=1 frozenToZero=3 recoveredAfterRestore=1 declaredOwnershipHits=1 footprint=[ParamBreath: 0.4511->0.0000]
+09-26 02:48:29.862  3412  3429 I CubismSmoke: AB subsystem=CubismPhysicsUpdater noiseFloorParams=16/42 attributable=1 frozenToZero=4 recoveredAfterRestore=1 declaredOwnershipHits=n/a footprint=[ParamScarf: 0.1969->0.0000]
+09-26 02:48:39.529  3412  3429 I CubismSmoke: AB subsystem=CubismPoseUpdater noiseFloorParams=15/42 attributable=2 frozenToZero=3 recoveredAfterRestore=2 declaredOwnershipHits=n/a footprint=[ParamAngleY: 23.6275->4.4896, ParamEyeBallY: 0.8313->0.0000]
+09-26 02:48:46.565  3412  3429 I CubismSmoke: POSE_ACTIVITY windowSeconds=6.0 topParts=(none)
+09-26 02:48:49.904  3412  3429 I CubismSmoke: CAPTURE tag=expression-F05 size=1600x900 distinct=69839 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsnull=N/A diffRatio=N/A file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-expression-F05.png
+09-26 02:48:52.936  3412  3429 I CubismSmoke: AB_EXPRESSION expression=F05 file=expressions/F05.exp3.json declaredParams=6 attributableToUpdater=6 detail=[ParamEyeLOpen(spec=0.00, withUpdater=-0.968, withoutUpdater=+0.000), ParamEyeLSmile(spec=1.00, withUpdater=+1.000, withoutUpdater=+0.000), ParamEyeROpen(spec=0.00, withUpdater=-0.968, withoutUpdater=+0.000), ParamEyeRSmile(spec=1.00, withUpdater=+1.000, withoutUpdater=+0.000), ParamBrowLY(spec=0.32, withUpdater=+0.320, withoutUpdater=+0.000), ParamBrowRY(spec=0.32, withUpdater=+0.320, withoutUpdater=+0.000)]
+09-26 02:48:52.958  3412  3429 I CubismSmoke: POSE_DIRECT_DRIVE partGroups=4 hasLinkedParameters=false maxOpacityDelta=0.0000 detail=[Part01ArmLA001: arm=0 -> 1.0000, arm=1 -> 1.0000, Part01ArmLB001: arm=0 -> 0.0000, arm=1 -> 0.0000, Part01ArmRA001: arm=0 -> 1.0000, arm=1 -> 1.0000, Part01ArmRB001: arm=0 -> 0.0000, arm=1 -> 0.0000]
+09-26 02:49:02.686  3412  3655 I CubismSmoke: CORE_VERSION=06.00.0001 (100663297)
+09-26 02:49:02.800  3412  3655 I CubismSmoke: LOADED=Haru.moc3 textures=2 expressions=8 physics=Haru.physics3.json pose=Haru.pose3.json blink=2
+09-26 02:49:06.084  3412  3429 I CubismSmoke: CAPTURE tag=scene0-idle size=1600x900 distinct=70132 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsnull=N/A diffRatio=N/A file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene0-idle.png
+09-26 02:49:06.097  3412  3429 I CubismSmoke: BIND parameters=42 parts=19 schedulerUpdaters=6
+09-26 02:49:08.236  3412  3429 I CubismSmoke: PARAM_TRACE tag=scene0-idle samples=16 intervalMs=120 total=42 driven=14 top=ParamAngleZ=15.6378, ParamAngleX=6.7205, ParamAngleY=5.1413, ParamBodyAngleX=3.7560, ParamBodyAngleZ=2.0081, ParamEyeLOpen=1.0000, ParamEyeROpen=1.0000, ParamBreath=0.4628, ParamHairBack=0.0847, ParamScarf=0.0835, ParamHairFront=0.0794, ParamHairSide=0.0783
+09-26 02:49:11.543  3412  3429 I CubismSmoke: CAPTURE tag=scene0-motion size=1600x900 distinct=69989 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsscene0-idle=75626 diffRatio=0.0525 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene0-motion.png
+09-26 02:49:13.675  3412  3429 I CubismSmoke: PARAM_TRACE tag=scene0-motion samples=16 intervalMs=120 total=42 driven=30 top=ParamAngleY=30.8444, ParamBodyAngleY=15.6787, ParamAngleX=14.7953, ParamAngleZ=14.1791, ParamBodyUpper=5.4160, ParamArmLB=4.9392, ParamBodyAngleZ=1.7817, ParamBodyAngleX=1.7083, ParamMouthForm=1.4254, ParamHandAngleL=1.2009, ParamHandAngleR=1.0019, ParamArmLA=0.6000
+09-26 02:49:17.809  3412  3655 I CubismSmoke: RESUMED_WITH_CONTEXT_RECREATION scene=0
+09-26 02:49:18.117  3412  3429 I CubismSmoke: CAPTURE tag=scene0-resumed size=1600x900 distinct=69068 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsscene0-motion=72643 diffRatio=0.0504 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene0-resumed.png
+09-26 02:49:18.254  3412  3655 I CubismSmoke: LOADED=Hiyori.moc3 textures=2 expressions=0 physics=Hiyori.physics3.json pose=Hiyori.pose3.json blink=2
+09-26 02:49:21.544  3412  3429 I CubismSmoke: CAPTURE tag=scene1-idle size=1600x900 distinct=74296 bg=#ffffffff foreground=731341 foregroundRatio=0.5079 diffVsscene0-resumed=104271 diffRatio=0.0724 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene1-idle.png
+09-26 02:49:21.549  3412  3429 I CubismSmoke: BIND parameters=70 parts=24 schedulerUpdaters=5
+09-26 02:49:23.688  3412  3429 I CubismSmoke: PARAM_TRACE tag=scene1-idle samples=16 intervalMs=120 total=70 driven=59 top=ParamAngleY=34.3168, ParamAngleZ=30.3809, ParamHairAhoge=19.9518, ParamAngleX=16.6235, ParamBodyAngleY=13.8485, ParamArmLA=9.9595, ParamArmRA=9.9595, Param_Angle_Rotation_7_ArtMesh55=9.8679, Param_Angle_Rotation_7_ArtMesh54=9.8679, ParamBodyAngleZ=9.7428, Param_Angle_Rotation_6_ArtMesh55=7.4897, Param_Angle_Rotation_6_ArtMesh54=7.4897
+09-26 02:49:26.997  3412  3429 I CubismSmoke: CAPTURE tag=scene1-motion size=1600x900 distinct=73622 bg=#ffffffff foreground=731363 foregroundRatio=0.5079 diffVsscene1-idle=81623 diffRatio=0.0567 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene1-motion.png
+09-26 02:49:29.120  3412  3429 I CubismSmoke: PARAM_TRACE tag=scene1-motion samples=16 intervalMs=120 total=70 driven=60 top=ParamAngleZ=41.3800, ParamAngleY=21.8486, ParamHairAhoge=17.6348, ParamAngleX=11.6131, ParamBodyAngleX=11.6072, ParamBodyAngleY=11.3567, ParamBodyAngleZ=11.2975, ParamHandLB=10.0000, ParamHandRB=10.0000, Param_Angle_Rotation_7_ArtMesh55=9.6740, Param_Angle_Rotation_7_ArtMesh54=9.6740, Param_Angle_Rotation_6_ArtMesh55=7.1362
+09-26 02:49:33.089  3412  3655 I CubismSmoke: RESUMED_WITH_CONTEXT_RECREATION scene=1
+09-26 02:49:33.407  3412  3429 I CubismSmoke: CAPTURE tag=scene1-resumed size=1600x900 distinct=73737 bg=#ffffffff foreground=731362 foregroundRatio=0.5079 diffVsscene1-motion=91075 diffRatio=0.0632 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene1-resumed.png
+09-26 02:49:33.412  3412  3655 I CubismSmoke: RELEASE_ALL_MODEL_OK
+
+########## RUN 2 ##########
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=
+com.aiwatch.smoke.RuntimeSmokeTest:
+INSTRUMENTATION_STATUS: test=featureAttribution
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=featureAttribution
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=twoModelSmoke
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.aiwatch.smoke.RuntimeSmokeTest
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=twoModelSmoke
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 106.921
+
+OK (2 tests)
+
+
+INSTRUMENTATION_CODE: -1
+--- CubismSmoke ---
+--------- beginning of main
+--------- beginning of system
+09-26 02:49:47.417  3822  3839 I CubismSmoke: BIND parameters=42 parts=19 schedulerUpdaters=6
+09-26 02:49:47.417  3822  3839 I CubismSmoke: DECLARED eyeBlinkUpdater owns=[ParamEyeLOpen, ParamEyeROpen]
+09-26 02:49:47.417  3822  3839 I CubismSmoke: DECLARED breathUpdater owns=[ParamAngleX, ParamAngleY, ParamAngleZ, ParamBodyAngleX, ParamBreath]
+09-26 02:49:47.417  3822  3839 I CubismSmoke: DECLARED poseUpdater owns 4 partGroups=[Part01ArmRA001, Part01ArmRB001, Part01ArmLA001, Part01ArmLB001]
+09-26 02:49:47.432  3822  3843 I CubismSmoke: DECLARED model3.json EyeBlinkGroup=[ParamEyeLOpen, ParamEyeROpen] expressions=8
+09-26 02:49:47.433  3822  3839 I CubismSmoke: SCHEDULER updaters=[CubismEyeBlinkUpdater, CubismExpressionUpdater, CubismLookUpdater, CubismBreathUpdater, CubismPhysicsUpdater, CubismPoseUpdater]
+09-26 02:49:57.100  3822  3839 I CubismSmoke: AB subsystem=CubismEyeBlinkUpdater noiseFloorParams=10/42 attributable=3 frozenToZero=2 recoveredAfterRestore=1 declaredOwnershipHits=2 footprint=[ParamAngleZ: 15.7216->4.2581, ParamEyeLOpen: 0.9986->0.0000, ParamEyeROpen: 0.9986->0.0000]
+09-26 02:50:06.746  3822  3839 I CubismSmoke: AB subsystem=CubismBreathUpdater noiseFloorParams=16/42 attributable=1 frozenToZero=1 recoveredAfterRestore=1 declaredOwnershipHits=1 footprint=[ParamBreath: 0.4489->0.0000]
+09-26 02:50:16.413  3822  3839 I CubismSmoke: AB subsystem=CubismPhysicsUpdater noiseFloorParams=13/42 attributable=3 frozenToZero=4 recoveredAfterRestore=3 declaredOwnershipHits=n/a footprint=[ParamHairFront: 0.0933->0.0000, ParamHairSide: 0.0744->0.0000, ParamHairBack: 0.0995->0.0000]
+09-26 02:50:26.145  3822  3839 I CubismSmoke: AB subsystem=CubismPoseUpdater noiseFloorParams=17/42 attributable=1 frozenToZero=3 recoveredAfterRestore=1 declaredOwnershipHits=n/a footprint=[ParamBodyAngleX: 2.6901->1.6330]
+09-26 02:50:33.234  3822  3839 I CubismSmoke: POSE_ACTIVITY windowSeconds=6.0 topParts=(none)
+09-26 02:50:36.590  3822  3839 I CubismSmoke: CAPTURE tag=expression-F05 size=1600x900 distinct=69922 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsnull=N/A diffRatio=N/A file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-expression-F05.png
+09-26 02:50:39.636  3822  3839 I CubismSmoke: AB_EXPRESSION expression=F05 file=expressions/F05.exp3.json declaredParams=6 attributableToUpdater=6 detail=[ParamEyeLOpen(spec=0.00, withUpdater=-0.323, withoutUpdater=+0.000), ParamEyeLSmile(spec=1.00, withUpdater=+1.000, withoutUpdater=+0.000), ParamEyeROpen(spec=0.00, withUpdater=-0.323, withoutUpdater=+0.000), ParamEyeRSmile(spec=1.00, withUpdater=+1.000, withoutUpdater=+0.000), ParamBrowLY(spec=0.32, withUpdater=+0.320, withoutUpdater=+0.000), ParamBrowRY(spec=0.32, withUpdater=+0.320, withoutUpdater=+0.000)]
+09-26 02:50:39.650  3822  3839 I CubismSmoke: POSE_DIRECT_DRIVE partGroups=4 hasLinkedParameters=false maxOpacityDelta=0.0000 detail=[Part01ArmLA001: arm=0 -> 1.0000, arm=1 -> 1.0000, Part01ArmLB001: arm=0 -> 0.0000, arm=1 -> 0.0000, Part01ArmRA001: arm=0 -> 1.0000, arm=1 -> 1.0000, Part01ArmRB001: arm=0 -> 0.0000, arm=1 -> 0.0000]
+09-26 02:50:49.309  3822  4066 I CubismSmoke: CORE_VERSION=06.00.0001 (100663297)
+09-26 02:50:49.401  3822  4066 I CubismSmoke: LOADED=Haru.moc3 textures=2 expressions=8 physics=Haru.physics3.json pose=Haru.pose3.json blink=2
+09-26 02:50:52.686  3822  3839 I CubismSmoke: CAPTURE tag=scene0-idle size=1600x900 distinct=70067 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsnull=N/A diffRatio=N/A file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene0-idle.png
+09-26 02:50:52.695  3822  3839 I CubismSmoke: BIND parameters=42 parts=19 schedulerUpdaters=6
+09-26 02:50:54.820  3822  3839 I CubismSmoke: PARAM_TRACE tag=scene0-idle samples=16 intervalMs=120 total=42 driven=14 top=ParamAngleZ=15.3924, ParamAngleX=6.8490, ParamAngleY=5.2625, ParamBodyAngleX=3.7752, ParamBodyAngleZ=2.0097, ParamEyeLOpen=1.0000, ParamEyeROpen=1.0000, ParamBreath=0.4537, ParamScarf=0.0834, ParamHairBack=0.0800, ParamHairFront=0.0750, ParamHairSide=0.0740
+09-26 02:50:58.119  3822  3839 I CubismSmoke: CAPTURE tag=scene0-motion size=1600x900 distinct=70306 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsscene0-idle=75630 diffRatio=0.0525 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene0-motion.png
+09-26 02:51:00.253  3822  3839 I CubismSmoke: PARAM_TRACE tag=scene0-motion samples=16 intervalMs=120 total=42 driven=32 top=ParamAngleY=30.7219, ParamBodyAngleY=15.6800, ParamAngleX=15.5202, ParamAngleZ=14.0836, ParamBodyUpper=5.4183, ParamArmLB=4.9500, ParamBodyAngleZ=2.8652, ParamEyeLOpen=2.0000, ParamEyeROpen=2.0000, ParamBodyAngleX=1.7661, ParamHandAngleL=1.1650, ParamMouthForm=1.0000
+09-26 02:51:05.423  3822  4066 I CubismSmoke: RESUMED_WITH_CONTEXT_RECREATION scene=0
+09-26 02:51:05.737  3822  3839 I CubismSmoke: CAPTURE tag=scene0-resumed size=1600x900 distinct=70235 bg=#ffffffff foreground=731367 foregroundRatio=0.5079 diffVsscene0-motion=75115 diffRatio=0.0522 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene0-resumed.png
+09-26 02:51:05.875  3822  4066 I CubismSmoke: LOADED=Hiyori.moc3 textures=2 expressions=0 physics=Hiyori.physics3.json pose=Hiyori.pose3.json blink=2
+09-26 02:51:09.159  3822  3839 I CubismSmoke: CAPTURE tag=scene1-idle size=1600x900 distinct=74384 bg=#ffffffff foreground=731340 foregroundRatio=0.5079 diffVsscene0-resumed=104158 diffRatio=0.0723 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene1-idle.png
+09-26 02:51:09.164  3822  3839 I CubismSmoke: BIND parameters=70 parts=24 schedulerUpdaters=5
+09-26 02:51:11.306  3822  3839 I CubismSmoke: PARAM_TRACE tag=scene1-idle samples=16 intervalMs=120 total=70 driven=51 top=ParamAngleY=34.5072, ParamAngleZ=30.3636, ParamHairAhoge=19.9294, ParamAngleX=13.2515, ParamBodyAngleY=9.9052, ParamBodyAngleZ=9.7665, Param_Angle_Rotation_7_ArtMesh55=9.7165, Param_Angle_Rotation_7_ArtMesh54=9.7165, Param_Angle_Rotation_6_ArtMesh55=7.2726, Param_Angle_Rotation_6_ArtMesh54=7.2726, ParamBodyAngleX=5.8594, Param_Angle_Rotation_5_ArtMesh55=5.3465
+09-26 02:51:14.609  3822  3839 I CubismSmoke: CAPTURE tag=scene1-motion size=1600x900 distinct=73554 bg=#ffffffff foreground=731363 foregroundRatio=0.5079 diffVsscene1-idle=81543 diffRatio=0.0566 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene1-motion.png
+09-26 02:51:16.735  3822  3839 I CubismSmoke: PARAM_TRACE tag=scene1-motion samples=16 intervalMs=120 total=70 driven=54 top=ParamAngleZ=18.4897, ParamAngleY=17.0523, ParamHairAhoge=16.1812, ParamAngleX=12.8023, Param_Angle_Rotation_7_ArtMesh55=9.0418, Param_Angle_Rotation_7_ArtMesh54=9.0418, Param_Angle_Rotation_6_ArtMesh55=6.9337, Param_Angle_Rotation_6_ArtMesh54=6.9337, Param_Angle_Rotation_3_ArtMesh62=6.6535, Param_Angle_Rotation_3_ArtMesh61=6.6535, Param_Angle_Rotation_2_ArtMesh62=6.2735, Param_Angle_Rotation_2_ArtMesh61=6.2735
+09-26 02:51:20.728  3822  4066 I CubismSmoke: RESUMED_WITH_CONTEXT_RECREATION scene=1
+09-26 02:51:21.041  3822  3839 I CubismSmoke: CAPTURE tag=scene1-resumed size=1600x900 distinct=74569 bg=#ffffffff foreground=731318 foregroundRatio=0.5079 diffVsscene1-motion=77768 diffRatio=0.0540 file=/storage/emulated/0/Android/data/com.aiwatch.cubism.smoke/files/smoke-scene1-resumed.png
+09-26 02:51:21.045  3822  4066 I CubismSmoke: RELEASE_ALL_MODEL_OK

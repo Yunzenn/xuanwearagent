@@ -1,0 +1,37 @@
+plugins { id 'com.android.application' version '8.7.3' }
+def sdkRoot = file('../CubismSdkForJava-5-r.5')
+android {
+    namespace 'com.live2d.demo'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.aiwatch.cubism.smoke'
+        minSdk 28
+        targetSdk 35
+        versionCode 1
+        versionName 'runtime-smoke'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        ndk { abiFilters 'x86_64' }
+    }
+    sourceSets {
+        main {
+            manifest.srcFile "$sdkRoot/Sample/src/full/AndroidManifest.xml"
+            // Only the official SAMPLE app source is compiled into this module. The framework is consumed
+            // as the ':cubism-framework' Gradle library module (see settings.gradle), so its source is no
+            // longer flattened in here — that duplication was the old integration shape.
+            java.srcDirs = ["$sdkRoot/Sample/src/main/java", "$sdkRoot/Sample/src/full/java"]
+            res.srcDirs = ["$sdkRoot/Sample/src/main/res"]
+            assets.srcDirs = ["$sdkRoot/Sample/src/main/assets"]
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies {
+    // Official Cubism framework as a Gradle library module (its own source tree is untouched).
+    implementation project(':cubism-framework')
+    // The framework declares the Core AAR as compileOnly, so the consuming app must supply it at runtime.
+    implementation files("$sdkRoot/Core/android/Live2DCubismCore.aar")
+    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'com.google.android.material:material:1.4.0'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'junit:junit:4.13.2'
+}

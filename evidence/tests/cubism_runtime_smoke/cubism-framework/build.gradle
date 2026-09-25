@@ -1,0 +1,43 @@
+// Adapter module: consumes the official, UNMODIFIED Cubism framework source tree as a Gradle library
+// module. Nothing under third_party/live2d/sdk-r5/CubismSdkForJava-5-r.5 is edited or copied.
+//
+// Why not use the SDK's own Framework/framework/build.gradle directly (via projectDir pointing at it)?
+// Because that module cannot be configured in this environment, verified 2026-09-25:
+//   * it sets compileSdk from PROP_COMPILE_SDK_VERSION = 36, and only the android-35 platform is
+//     installed locally (no android-36); and
+//   * it declares `java { toolchain { languageVersion = 17 } }`, while the only JDK present is 21 and
+//     there is no toolchain download repository / network access.
+// Both are environment gaps, not framework defects. This descriptor keeps the official source and
+// assets authoritative while removing the source flattening the old shape did.
+plugins { id 'com.android.library' }
+
+def sdkRoot = file('../../CubismSdkForJava-5-r.5')
+def frameworkMain = new File(sdkRoot, 'Framework/framework/src/main')
+
+android {
+    namespace 'com.live2d.sdk.cubism.framework'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 21
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = [new File(frameworkMain, 'java')]
+            // Required at runtime, not optional: CubismShaderAndroid loads its GLSL sources from these
+            // assets. A module that ships only the Java source builds fine and then fails on the device.
+            assets.srcDirs = [new File(frameworkMain, 'assets')]
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Matches the official module: the consuming application supplies the Core AAR at runtime.
+    compileOnly files("$sdkRoot/Core/android/Live2DCubismCore.aar")
+}

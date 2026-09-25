@@ -29,3 +29,25 @@
 | 本机构建环境缺失 | CLOSED | 已安装 Platform 35、Build Tools 35.0.0、ADB 37.0.1；Gradle 8.9 clean build 已通过 |
 | targetSdk 35 在 Android 9/新系统上的行为差异 | P0C | minSdk 已固定 28；真机 Gate 同时验证 Android 9 行为，产品 targetSdk 在后续发布策略中复核 |
 | IndexTTS 固定 24k 与可配置 server playback rate 再次分叉 | MITIGATED / Runtime pending | `open_audio_channels()` 已在启动音频线程前校验预建 encoder rate 与 `conn.sample_rate`；不一致明确失败，不再静默错配；长期可增加 provider 显式输出契约 |
+
+## 2026-09-25 新增 / 更新
+
+| 风险 | 等级 | 处置 |
+|---|---|---|
+| P2B-RUNTIME 仅覆盖 x86_64 / 4 KB / API 28 模拟器 | SCOPE LIMITED / 其余 NOT RUN | 该行已取得像素级与参数级证据（`LIVE2D_RUNTIME_VALIDATION.md`）。但 1600×900 模拟器不是 410×502 手表；设备虽宣告 ARM ABI 却未执行。ARM64 4 KB 与 x86_64 16 KB 两行仍 NOT RUN，模拟器不得替代参考手机 |
+| 实时语音 AEC 在廉价全 Android 手表上可能不可用 | P0 / 未验证 | 无免费 Kotlin 软件 AEC 可直接依赖；`AcousticEchoCanceler` 依赖设备 HAL，可能 `isAvailable()==false` 或空转。兜底为 WebRTC AEC3（NDK，体积大）。这决定实时对话与打断能否成立，应在 CD12Max 上尽早原型验证，不要等到集成后才发现 |
+| Live2D 集成形态：框架源码曾摊平进 app 模块 | VERIFICATION DONE / PRODUCT ADOPTION OPEN | 已核实 `Framework/framework` 本身就是 `com.android.library`。验证工程已改为「框架作 Gradle library module + 本地 Core AAR」，重构后重跑运行时 Gate 通过。把该形态搬到产品 `app` 侧仍需单独授权（不属本轮），且不得借此进 P2B-1 |
+| 官方 Framework module 在本机不可直接 include | ENVIRONMENT OPEN | 官方 module 要求 `compileSdk 36`（本机仅 android-35）与 `java.toolchain = 17`（本机仅 JDK 21），两者均无外网可下载，Gradle 实测 `No locally installed toolchains match`。现以薄适配 module 消费官方未修改源码。补齐 android-36 + JDK 17 后应改用官方 module |
+| 框架 GLSL shader 为运行时加载资源 | MITIGATED | shader 在 `Framework/framework/src/main/assets/.../standardES/`，由 `CubismShaderAndroid` 运行时读取。library module 只挂 `java.srcDirs` 会编译打包正常、设备上才失败。适配 module 已挂 `assets.srcDirs`；实测 APK 含全部 36 个 shader 且成像正常。产品侧集成时必须重复此检查 |
+| 官方无 Maven/JitPack 制品 | CONSTRAINT / 已确认 | 多方核实均不存在（JitPack 各 tag 构建失败、官方仓库无 `maven-publish`）。本地 module 是唯一路径，不要在设计里假设可 `implementation` 依赖 |
+| `connectedAndroidTest` / UTP runner 启动即死 | UTP_RUNNER_BROKEN / workaround validated / non-blocking | `utp.0.log` 仅 267 字节、无 stack trace，在安装任何东西前退出。已用 `adb install` + `am instrument` 绕过并由脚本固化，两方法各独立进程均 `OK (1 test)`。**明确不修**：这是基础设施债，不是 Cubism runtime 失败，继续投入无收益 |
+| 冒烟 harness 位于被 `.gitignore` 的目录 | HYGIENE OPEN | `third_party/live2d/sdk-r5/` 因含专有 SDK 被整体忽略，导致 `RuntimeSmokeTest.java` 工作副本不受版本控制。已镜像到 `evidence/tests/cubism_runtime_smoke/` 保全；根因未解决，建议 harness 迁出该目录并以可配置路径引用 SDK |
+| Cubism SDK Release License 商业门槛 | RELEASE COMPLIANCE OPEN | 据许可证原文，年营业额超过 1000 万日元的商业使用者须另行取得 Release License。另有 EXPANDABLE_APPLICATION 独立 blocker。发布前必须确认，不得默认套用个人/小规模豁免 |
+| 第三方 Android 小智客户端许可不可核实 | REUSE CONSTRAINT | 技术最完整的 `douo/xiaozhi-android` 与 `hlk16/android-xiaozhi` 均**无许可证文件**（逐个文件名 + main/master 全 404），只能 REFERENCE ONLY。可用的 MIT 候选为 `weijia/android-zhi`、`LRchangyu/xiaozhi-esp32-ble`。技术价值高 ≠ 可复制 |
+| 逐特性归因已补对照实验 | CLOSED | blink / breath / physics / expression 已由「从 `CubismUpdateScheduler` 移除目标 updater」的 A/B 对照实测归因，4 次连续运行复现；expression 与 `.exp3.json` 声明值精确吻合。**第一版实验曾产生一个 pose 假阳性，已在复跑中识别并撤回**，现结论要求 A/A 空对照 + 多次复现 |
+| pose 无行为级证据（资产限制） | N/A BY ASSET / OPEN | 官方 sample **所有**模型的 `pose3.json` 其 `Link` 数组均为空（Haru 4 parts、Hiyori 2、Mao 4、Natori 8），无关联参数即无法据参数决定显隐，对这些模型 pose 按设计就是 no-op。实测一致：6 秒窗口 part 零变化，同一 GL 事件内强制 `ParamArmLA` 跨量程 160 步仍 `maxOpacityDelta=0.0000`。wiring 已验证（CubismPose 实例 + 4 partGroup + updater 注册）。**补测需另找 `pose3.json` 含非空 `Link` 的合法模型** |
+| 归因方法不能依赖「变化范围」 | METHOD CONSTRAINT | 该 sample 的 idle motion 播完会随机重选动作，且每帧 `loadParameters()/saveParameters()` 造成跨臂状态携带，导致 A/A 空对照下 42 个参数有 9–17 个范围差异 >0.02。有效判据只有相位无关的「完全不再被写入」（范围恰为 0）。「重启同一 idle motion」已试并否决：会抑制眨眼 updater 并使信号消失 |
+| 软件 GL 下间歇出现 `GL_INVALID_VALUE (0x501)` | OPEN / 未定位 | 在 SwiftShader 模拟器上两次出现于 motion 阶段的 GL 读取处，**同时像素输出完全正常**（3.2 万+ 色、前景 94%、帧间变化 17.8%）；硬件 GL 设备从未出现。加前置 drain 后最终一轮 `glErrors=0`，说明是间歇而非必现。最可能来自 clipping mask 的 FBO 设置。**需在 CD12Max 与参考手机上复核**；当前作为记录项而非硬 Gate，理由是像素已独立证明渲染成功，硬 Gate 会无收益地挡住 ARM64 验证 |
+| sample 静态单例导致整类单进程运行 flaky | MITIGATED / 产品需注意 | 同一顺序曾 `OK (2 tests)`、下一次崩溃于 `LAppPal.loadFileAsBytes → CubismShaderAndroid.getInstance → LAppDelegate.onSurfaceCreated`（Activity 引用失效）。根因是官方 sample 用静态单例持有 Activity。harness 已改为每测试方法独立进程绕过；**产品侧不得照搬该单例生命周期模式** |
+| 报告可能夹带本机账户路径 | MITIGATED | Gradle 输出含 `C:\Users\<账户>\.android\...`，会被写进证据报告，违反 `GIT_PRIVACY.md`。已在脚本 `Write-Step` 加 `Redact()`，提交前扫描两份报告确认无残留 |
+| 设备 A（1600×900 硬件 GL）已丢失 | PROCESS / 不可恢复 | 我为清理退化 GL 状态执行 `adb reboot`，该命令对这台模拟器触发完整关机并退出进程而非重启，随后无法恢复（本机无监听端口、无第三方模拟器安装），且它不是工作区 AVD。**教训：不要对不属于本工作区的设备执行 `adb reboot`**。其历史证据保留在 `cubism-feature-attribution.txt`，结论已在工作区 AVD 上重新复现 |

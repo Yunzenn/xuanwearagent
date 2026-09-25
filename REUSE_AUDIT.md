@@ -10,7 +10,7 @@
 | Android audio | `DayanJ/xiaozhi-android-native@5fdc51e376fd89b4db0491066635b27663f66e09`：`service/AudioUtil.kt`、`service/XiaozhiWebSocketManager.kt` | AudioRecord/AudioTrack 生命周期实现 | REFERENCE | MIT；只对照权限、线程、初始化和故障处理，不直接复制。 |
 | Opus | `lostromb/concentus@3885c4e46513ef0fc81fca100189e54f1714c6ca`：`Java/Concentus/src/main/java/org/concentus/OpusEncoder.java`、`OpusDecoder.java` | `OpusEncoder`、`OpusDecoder` encode/decode API | DIRECT DEPENDENCY candidate | BSD 风格许可；优先依赖发布制品/固定源码版本，不复制 codec。分发物必须复现 LICENSE 中版权、条件与免责声明。 |
 | Live2D | `Live2D/CubismJavaSamples@8ce6803de7030a4816bccd8a3efcad69ea1d1186`：`Sample/src/full/.../LAppDelegate.java`、`LAppLive2DManager.java`、`LAppModel.java` | lifecycle、model loading、render loop、motion | SDK / REFERENCE | Sample 受 Live2D Open Software License；Core 受 Proprietary Software License；商业发布可能需要 Release License；样例模型另受 Free Material/各模型条款。不得按 MIT/Apache 处理。 |
-| Native Live2D integration | `Voine/ChatWaifu_Mobile@14092ac66c2afd51de06bb126fd102cec869eb8e` | Android/Native Live2D 集成 | REFERENCE ONLY | 根目录未发现 LICENSE，禁止复制代码，只可参考思想。 |
+| Native Live2D integration | `Voine/ChatWaifu_Mobile@14092ac66c2afd51de06bb126fd102cec869eb8e` | Android/Native Live2D 集成 | ADAPT（2026-09-25 更正，原判 REFERENCE ONLY 有误） | **MIT**，Copyright (c) 2023 weirdseed。原文照写「未发现 LICENSE」是错的：许可证文件名为英式拼写 `LICENCE`，`LICENSE` 才会 404。已直接抓取 `main/LICENCE` 全文（HTTP 200，1066 B，"MIT License / Copyright (c) 2023 weirdseed"）核实。MIT 只覆盖其自有代码；其 vendored `Live2D/src/SDKRoot/**` 仍受 Live2D 许可，内置 ATRI/Amadeus/Yuuka 模型属第三方 IP，不得沿用。 |
 | Product behavior | `TOM88812/xiaozhi-android-client@30a0c80446a3a88772945244739c0e69b79c647c` | Flutter Android/iOS 行为 | REFERENCE | Apache-2.0；不引入 Flutter runtime。 |
 | MCP | `stixez/droid-mcp@aeaa5b9e8e96f56ef64a7ca23d0726585f7b1103` | `DroidMcp` builder、`ToolRegistry`、device/settings/vibration/alarms/apps modules | P1 ADAPT | Apache-2.0；Phase 5 才按白名单选择模块，禁止 `addAll()`。 |
 | Avatar import | Android SAF + `ZipInputStream` 或成熟 ZIP library | select → validate → copy → private storage | DIRECT PLATFORM REUSE | 默认复制进 app private storage，导入完成后不依赖原 URI。只自研 canonical path、数量、压缩/解压体积、嵌套深度等安全策略，不自研压缩引擎。 |
@@ -30,3 +30,153 @@ Phase 1C 落地：上述 Concentus candidate 已转为固定源码依赖，冻�
 - 依赖或参考升级到不同 commit/tag 前必须重新审计。
 - 没有明确 LICENSE 的仓库一律 REFERENCE ONLY。
 - 任何复制的 MIT/Apache/BSD 源码都保留文件版权头，并在发行包中附带相应许可证/NOTICE 要求。
+
+---
+
+# 2026-09-25 第二轮调研（「去 GitHub 找现成的」）
+
+## 方法与局限（先读，它约束下表每一个许可结论）
+
+- `web_fetch` 在本环境**无法访问 github.com**：`github.com` 解析到 `198.18.0.15`（保留段地址，等同 DNS 沉洞），`raw.githubusercontent.com` 被直接拒绝。
+- `api.github.com` 返回 **HTTP 403**（限流/受限），无法用 API 的 license 字段核实。
+- 有效路径是 **Node.js `https` 直接抓 `raw.githubusercontent.com` 原文**。对每个候选，按 `main`/`master` × `LICENSE`/`LICENSE.md`/`LICENSE.txt`/`LICENCE`/`COPYING`/`license` 逐个探测，命中即停。**未命中即判「无许可证文件」，未抓到的内容一律标 UNVERIFIED，不得采用。**
+- 因此下表的许可结论是**读了许可证全文**得到的，不是搜索结果标签；但**最后提交时间、星数未逐一核实**，不作为判定依据。
+
+## 许可证核实结果
+
+| 候选 | 分支/文件 | 许可（读原文核实） | 判定 |
+|---|---|---|---|
+| `Voine/ChatWaifu_Mobile` | `main/LICENCE` 200, 1066 B | **MIT**, (c) 2023 weirdseed | ADAPT（**更正**，见上表） |
+| `weijia/android-zhi` | `main/LICENSE` 200, 1080 B | **MIT**, (c) 2025 Android-Zhi Contributors | **REFERENCE ONLY**（深入审查后由 ADAPT 候选降级，见第三轮） |
+| `LRchangyu/xiaozhi-esp32-ble` | `main/LICENSE` 200, 1140 B | **MIT**, (c) 2025 Shenzhen Xinzhi Future Technology Co., Ltd. | **REFERENCE ONLY**（无 Android 源码；OTA 契约可移植，见第三轮） |
+| `Nexthubs/VTuber` | `main/LICENSE` 200, 1216 B | **MIT**, (c) 2025 Yi-Ting Chiu | REFERENCE（桌面平台） |
+| `gameswu/NyaDeskPetAPP` | `main/LICENSE` 200, 1070 B | **MIT**, (c) 2026 gameswu | REFERENCE |
+| `soniqo/speech-android` | `main/LICENSE` 200, 10757 B | **Apache-2.0** | 待评估（VAD/ASR） |
+| `douo/xiaozhi-android` | 全部 404 | **无许可证文件** | **REFERENCE ONLY** |
+| `hlk16/android-xiaozhi` | 全部 404 | **无许可证文件** | **REFERENCE ONLY** |
+| `Live2D/CubismJavaFramework` | `master/LICENSE.md` 200 | Live2D Open Software License | DIRECT（本地 Gradle module） |
+| `Live2D/CubismJavaSamples` | `master/LICENSE.md` 200 | Live2D Open Software License | REFERENCE |
+
+**注意**：`douo/xiaozhi-android` 技术上是目前最完整的 Android 小智客户端（双传输抽象：WebSocket + MQTT、有 Releases），但**没有许可证**。按既定规则，它只能读思路，一行代码都不能抄。技术价值高 ≠ 可用。
+
+## 重大发现 1：不需要 vendor 整个 Sample（本地已核实）
+
+`Framework/framework/build.gradle` 本身就是：
+
+```gradle
+plugins { id 'com.android.library' }
+android { namespace = "com.live2d.sdk.cubism.framework" ... }
+dependencies { compileOnly(fileTree(dir: '../../Core/android', include: ['Live2DCubismCore.aar'])) }
+```
+
+并带 `src/main/AndroidManifest.xml` 与完整的 `rendering/android/` 渲染包：`CubismRendererAndroid`、`CubismShaderAndroid`、`CubismClippingManagerAndroid`、`CubismRenderTargetAndroid`、`CubismOffscreenManagerAndroid`、`CubismClippingContextAndroid`、`CubismDrawableInfoCachesHolder`、`CubismRendererProfileAndroid`。
+
+**结论**：框架应作为 Gradle module 依赖，而不是把 `Framework/framework/src/main/java` 摊进我们的模块。**此项已于 2026-09-25 在验证工程落地**：新增 `runtime-smoke/cubism-framework/build.gradle`（薄 `com.android.library` 适配 module，源码/资源指向官方未修改的树），app 模块改为 `implementation project(':cubism-framework')`，重构后重跑运行时 Gate 通过。
+
+**重要环境约束（实测）**：官方 `Framework/framework/build.gradle` **无法在本机直接 include**——它要求 `compileSdk 36`（本机只有 android-35）且声明 `java.toolchain = 17`（本机只有 JDK 21），两者均无外网可下载；Gradle 实测报 `Cannot find a Java installation ... {languageVersion=17}` / `No locally installed toolchains match`。因此当前用适配 module。若补齐 android-36 + JDK 17，应删掉适配 module 直接 include 官方 module。
+
+**配套坑（必须记住）**：框架的 GLSL shader 位于 `Framework/framework/src/main/assets/com/live2d/sdk/cubism/framework/shaders/standardES/`，由 `CubismShaderAndroid` 在**运行时**加载。library module 只挂 `java.srcDirs` 会编译、打包一切正常，到设备上才失败。适配 module 因此同时挂了 `assets.srcDirs`，实测 APK 内含全部 36 个 shader 文件且截图正常成像。
+
+## 重大发现 2：官方没有 Maven/JitPack 制品（否定结论，已多方核实）
+
+未找到任何官方或第三方的 Cubism Java/Android Maven 制品；JitPack 对 Live2D 各 tag 全部构建失败；官方仓库不含 `maven-publish`。因此**必须**以本地 module + 本地 `Live2DCubismCore.aar` 的方式集成，不存在 `implementation("com.live2d:...")` 这条路。
+
+## 重大发现 3：官方 Java 侧没有 lipsync，但框架层已经给好了挂钩（本地已核实）
+
+`Sample/src/full/java/com/live2d/demo/full/LAppWavFileHandler.java` 第 91-95 行：
+
+```java
+public float getParameter() {
+    // Lip sync is not implemented in this sample.
+    // To enable lip sync, compute the RMS from the audio buffer
+    return 0.0f;
+}
+```
+
+而 `Framework/framework/src/main/java/.../framework/motion/` 下已存在完整更新器集合：`CubismLipSyncUpdater`、`CubismEyeBlinkUpdater`、`CubismExpressionUpdater`、`CubismPhysicsUpdater`、`CubismPoseUpdater`、`CubismUpdateScheduler`、`IParameterProvider`。
+
+**结论**：嘴型驱动**不需要**自研效果框架，也**不需要** MotionSync（无 Java/Android 变体）。只需实现一个 `IParameterProvider`，从 PCM 算 RMS 包络并归一化后喂给 `CubismLipSyncUpdater`——约 50 行，且这是官方在源码里明确指名的做法。这就是「不重复造轮子」在本项目的具体落点。
+
+## 重大发现 4：AEC / 打断是最大风险，但服务端 AEC 可能使其不必在设备侧解决
+
+- 没有免费的 Kotlin 软件 AEC 可直接依赖。
+- `android.media.audiofx.AcousticEchoCanceler` 依赖设备音频 HAL 实现，在廉价全 Android 手表上可能 `isAvailable()==false` 或形同空转。
+- 兜底为 `webrtc-sdk/android` 的 AEC3（NDK 集成，体积大）；低延迟播放兜底为 `google/oboe`（C++/NDK，Apache-2.0）。
+- **第三条路，可能是最适合手表的一条**：官方协议支持**服务端 AEC** —— 客户端在 hello 里声明 `features.aec = true`，并改用二进制协议 v2（帧内带 `timestamp`）让服务端做回声消除。若该路径可用，则廉价手表不必承担设备侧 AEC，风险性质从「可能做不了」变为「服务器是否支持」。需与所用服务端确认，见第三轮。
+- `Voine/ChatWaifu_Mobile` 内的 OVRLipSync 模块是 **Meta Oculus 专有许可**，不在该仓库 MIT 覆盖范围内，且作者已放弃该路径，**REJECT**。
+- `DanielSWolf/rhubarb-lip-sync` 为 MIT，但是桌面离线批处理（PocketSphinx），**非实时**，运行时 REJECT，只可作离线预烘焙参考。
+
+## 重大发现 5：EGL context lost 的现成参考
+
+`Live2D/CubismAndroidLiveWallpaper`（2021）中 vendored 的 `net/rbgrn/android/glwallpaperservice/GLWallpaperService.java` 手写了 `EglHelper`，在 `eglSwapBuffers` 后检查 `EGL11.EGL_CONTEXT_LOST` 并重建 context/surface。属 REFERENCE；若复制该文件需另行遵守其 Apache-2.0 归属要求。
+
+## Live2D 合规条款（据许可证原文，非第三方摘要）
+
+两个许可必须分清，不可混为一谈：
+
+- **Live2D Open Software License**（Framework + Samples）：§2.1 授予使用/复制/演示/修改的权利；§2.2.1 允许在「已并入自己作品」的前提下分发；§5.1 禁止超出明示范围的修改，且不得删除或改动许可标识；§2.3 若向 §2.2.1 之外分发衍生作品，需另行签署 Live2D Publication License。**不是 OSI 认证许可，GitHub 不显示 license 标签，绝不可当 MIT/Apache 处理。**
+- **Live2D Proprietary Software License**（Cubism Core）：§6.1 禁止修改/移植/改编；§6.2 除明示许可外禁止分发、披露、捆绑。Core 是不透明二进制，只固定版本，永不修补。
+- **两者共同**：年营业额超过 **1000 万日元**的商业使用者须取得 Cubism SDK Release License。这是发货前的合规待办，应尽早确认。
+
+## 本轮未做的事
+
+未复制任何第三方源码，未引入任何新依赖，未修改 `app`/`core-protocol`/`core-audio`，未变更已冻结的 SHA。上表中除 ChatWaifu 许可更正外，其余均为新增候选，采用前需逐条落到 `LICENSE_MATRIX.md` 的版权与 NOTICE 义务。
+
+---
+
+# 2026-09-25 第三轮：候选深入审查（donor audit）
+
+对第二轮筛出的两个 MIT「Android 客户端」候选做了逐文件审查（下载 tarball、解析完整文件树、读全部源码）。结论**推翻了第二轮的 ADAPT 候选判断**：
+
+## `weijia/android-zhi` → REFERENCE ONLY（原判 ADAPT 候选，现撤回）
+
+MIT 属实，但**不是可用代码供体**：全仓库仅 65 个文件、**4 次提交**、**从未编译通过**。判据：
+
+1. **没有 Gradle wrapper**（无 `gradlew`/`gradle/wrapper/`），但其 CI 却执行 `./gradlew assembleDebug` —— 说明该 CI 从未成功过。
+2. `PreferencesDataStore.kt` 声明 `Flow<Boolean>` 却用 `stringPreferencesKey` 读取，类型不成立。
+3. `MainViewModel` 构造函数注入 Android `Service`，Hilt 依赖图无效。
+4. `Theme.kt` 使用 `Color.White` 但该文件未 import（Kotlin import 是文件级的）。
+5. 依赖 `io.github.tans5:opus:0.10.0` 在 Maven Central **不存在**，且 `settings.gradle.kts` 未配置 JitPack。
+
+更关键的是**协议实现是错的**，不能当参考实现用：
+
+- **JSON 大小写错误**：用 Gson 默认命名输出 `audioParams`/`sampleRate`/`frameDuration`，而真实 v1 线格式是 snake_case（`audio_params`/`sample_rate`/`frame_duration`）。
+- **根本没有 Opus**：hello 里宣告 `format="opus"`，但录音端产出裸 PCM16 并原样 `sendAudio()` 发出去；依赖声明了却从未 import。`openAudioChannel()` 只是翻了个布尔量，从不等待服务端 hello。
+- 声明了 `enableAutoReconnect()` 但该标志**从未被读取**；`aecEnabled` 开关**从未被消费**（安慰剂开关）；`isActivated` 从未被写入。README 宣称的「Opus 编解码 / 低延迟 / 设备激活 / 自动重连」**全部未实现**。
+- 设备 ID 用 `System.currentTimeMillis()+random`，不是稳定 MAC/UUID，会破坏服务端激活绑定。
+
+**结论**：读作一次性 LLM 脚手架，不是可移植的移植版。其价值仅在于**反面教材**：本项目应避免「声明了但没接线的开关」这类安慰剂配置。
+
+## `LRchangyu/xiaozhi-esp32-ble` → REFERENCE ONLY，但 OTA 契约是本次调研最有价值的产出
+
+**该仓库里没有任何 Android 源码**：1218 个文件中 `.kt`/`.java`/`.gradle` 数量为 **0**。README 所说的「附带安卓版的 APP」是 `main/ble/ble_wifi_cfg_1.3.1.apk` —— 一个 **21.9 MB 预编译 Flutter 二进制**（用于 BLE Wi-Fi 配网，不是语音客户端），仓库内无源码，许可不可核实。**二进制 blob 不能作为代码供体。**
+
+它是 ESP-IDF/CMake 固件工程（`idf >= 5.5.0`），其协议/音频/OTA 核心同步自上游 `78/xiaozhi-esp32`（同样 MIT，需一并署名）。
+
+**真正有价值的是 `main/ota.cc`（477 行）—— 激活/OTA 的完整契约，可直接译成 Kotlin**：
+
+- 默认端点 `https://api.tenclass.net/xiaozhi/ota/`。
+- 请求头：`Activation-Version`（有 eFuse serial 时为 `2`，否则 `1`）、`Device-Id` = MAC、`Client-Id` = board UUID、`Serial-Number`、`User-Agent`、`Accept-Language`、`Content-Type`。
+- 响应字段：`activation{message, code, challenge, timeout_ms}`（用户输入控制台的激活码）、`mqtt{}` / `websocket{url, token, version}`（服务端下发传输配置）、`server_time{}`、`firmware{version, url, force}`。
+- 激活：`POST <ota_url>activate`，body `{algorithm:"hmac-sha256", serial_number, challenge, hmac}`；HTTP `202` = 待激活继续轮询，`200` = 成功；重试 10 次，超时退避 3 s、错误退避 10 s。
+
+不可移植的部分：`esp_ota_*`、eFuse/HMAC 计算、FreeRTOS event group、AFE —— 这些必须用 Kotlin 重写，**不是复制**。
+
+其余结论：
+
+- **协议参考更权威**：`docs/websocket.md`（495 行）+ `main/protocols/websocket_protocol.cc` 是规范级参考，可用来审计我们既有 `core-protocol` 是否漏了 `stt`、`llm.emotion`、`tts.sentence_start`、`system{reboot}`、`alert`、以及 `listen.state="detect"`。另有一条对本项目有用的协议事实：**`type:"iot"` 已被废弃，改用 `mcp`**。
+- **音频帧格式**：v1 = 二进制帧内裸 Opus 负载（靠 WS text/binary 区分）；v2 = `BinaryProtocol2{version,type,reserved,timestamp,payload_size,payload}`（`timestamp` 供服务端 AEC）；v3 = `BinaryProtocol3{type,reserved,payload_size,payload}`。
+- **打断策略可直接借用**（这是本项目要回答的核心设计问题）：`SetListeningMode(aec_mode == kAecOff ? AutoStop : Realtime)` —— AEC 可用则 `realtime` 全双工可打断；AEC 不可用则 `auto_stop` 半双工。播放中触发唤醒词则 `abort{reason:"wake_word_detected"}`。
+- UI 是 LVGL/C，与 Android 无关；无测试。
+
+## 本轮采用清单（保守，未执行）
+
+以下均为「移植契约/审计既有实现」，**不是复制代码**：
+
+1. 把 `ota.cc` 的激活/OTA **契约**译成 Kotlin（端点、请求头、响应字段、`202` 语义、重试退避）。
+2. 用 snake_case hello schema 作为 `core-protocol` 的一致性校验。
+3. 对照上游补 `stt` / `llm.emotion` / `tts.sentence_start` / `system{reboot}` / `alert` / `listen.detect`，以及 `iot`→`mcp` 的废弃关系。
+4. 采用「AEC 可用 ⇒ realtime 可打断；不可用 ⇒ auto_stop 半双工」的听音模式策略；并优先确认**服务端 AEC**（`features.aec` + 二进制 v2 带 timestamp）是否可用。
+5. 把 `docs/websocket.md` 作为协议测试 oracle（若 vendor 需署名）。
+6. 不要采纳 `weijia/android-zhi` 的 `minSdk 24` / AGP 8.8.0 / Compose BOM，也不要复制它的安慰剂开关反模式。
+7. MIT 义务：`android-zhi` 为 `Copyright (c) 2025 Android-Zhi Contributors`；`xiaozhi-esp32-ble` 为 `Copyright (c) 2025 Shenzhen Xinzhi Future Technology Co., Ltd.` 与 `Copyright (c) 2025 Project Contributors`，且其协议/OTA/音频核心同步自上游 `78/xiaozhi-esp32`，需一并署名。

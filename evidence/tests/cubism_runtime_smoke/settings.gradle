@@ -1,0 +1,21 @@
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+    resolutionStrategy {
+        eachPlugin {
+            // The official SDK modules declare the plugin without a version and rely on the SDK's own
+            // root buildscript classpath (AGP 8.9.1). This build supplies the version explicitly so the
+            // official source tree can stay unmodified.
+            if (requested.id.id == 'com.android.application' || requested.id.id == 'com.android.library') {
+                useModule('com.android.tools.build:gradle:8.7.3')
+            }
+        }
+    }
+}
+dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+rootProject.name = 'CubismRuntimeSmoke'
+
+// Consume the official Cubism framework as a Gradle library module instead of flattening its source
+// into the app module. ':cubism-framework' is a thin descriptor that references the unmodified official
+// source and assets in place; see cubism-framework/build.gradle for why the SDK's own module descriptor
+// cannot be used as-is here.
+include ':cubism-framework'
