@@ -30,3 +30,9 @@ Phase 1B 测试依赖固定：okhttp-tls 4.12.0、kotlinx-coroutines-test 1.8.1�
 
 Phase 1C：Concentus 不使用其 `1.0-SNAPSHOT` 版本号解析依赖，直接编译冻结 commit `3885c4e46513ef0fc81fca100189e54f1714c6ca` 导出的完整未修改 Java 源码归档（SHA256 与重建方式见 third_party/concentus/README.md）。core-audio 内部 JavaCompile/Jar task 生成 Java 8 依赖，生产 Kotlin/Java 仍目标 17，模块数仍为三个；构建时检查归档哈希，支持离线构建。APK assets 包含完整 LICENSE。
 参考官方约束：https://developer.android.com/topic/libraries/architecture/datastore 。
+
+## Phase 2B-0 决策
+
+本轮不新增依赖、不升级工具链。Cubism 官方 Framework/Samples 负责解析、introspection 和动画生命周期，Core AAR 等待许可与二进制审计；不把最新 Samples 构建工具版本直接移植进本项目。Wanyu/AIRI 仅择取流程与纯算法，不引入 Compose/Hilt/Room/Native runtime。
+
+ZIP 继续平台 ZipInputStream + 安全策略，当前无引入 Commons Compress 的需要。声音沿用现有 PCM/AudioTrack，嘴型只是播放数据消费者。Manager 复用已有用户认证/Agent/Voice API，禁止拿设备 WS token 当用户 token；本轮仅审计，未实现适配器。详见 PHASE_2B_REUSE_GATE.md、MANAGER_API_AUTH_AUDIT.md。

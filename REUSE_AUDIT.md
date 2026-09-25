@@ -17,6 +17,14 @@
 
 ## Freeze rules
 
+Phase 2B 增量审计见 PHASE_2B_REUSE_GATE.md（精确路径、函数、SHA、采用方式）与 MANAGER_API_AUTH_AUDIT.md：
+
+- Cubism Framework `ed15cb21a466893381d1dbddce0da943c7fe9a0f`：DIRECT 官方 metadata、参数枚举与动画更新器；Core AAR 尚未取得，不把 Samples SHA 当成 Core 版本。
+- Wanyu `f873e137e224192fbac72021536054ed4a5ad044`：ADAPT importer 流程、EmotionMapper 建议、纯 lipsync shaping；不复制先删旧模型行为、不搬 Native runtime 或第二播放链。
+- AIRI `a142a053fdc304666ba7caf8462678b79187f8ea`：REFERENCE 更新顺序/单一 updater 所有权，不迁移插件技术栈。
+- 冻结 Xiaozhi Manager：DIRECT API / ADAPTER，复用 Agent/Voice/systemPrompt；用户认证独立于 WS 设备认证。未新增 `/companion/*` 服务。
+- 本轮未复制以上源码或模型；后续复制时需落实 LICENSE_MATRIX 中的原始版权与许可义务。
+
 Phase 1C 落地：上述 Concentus candidate 已转为固定源码依赖，冻结 SHA 不变。`third_party/concentus` 保存 `git archive` 导出的未修改 Java 源码及 LICENSE；构建哈希校验、编译并依赖生成 JAR，未重写 codec。细节见该目录 README 与 LICENSE_MATRIX.md。
 
 - 依赖或参考升级到不同 commit/tag 前必须重新审计。

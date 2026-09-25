@@ -9,6 +9,14 @@ captures/
 gradle-*-bin.zip
 commandlinetools-win.zip
 .upstream/
+# Proprietary official SDK archives, binaries and models stay local.
+# Keep project audit Markdown visible to Git.
+/third_party/live2d/**
+!/third_party/live2d/**/
+!/third_party/live2d/**/*.md
+# Official package contents (including vendor Markdown) remain local.
+/third_party/live2d/downloads/
+/third_party/live2d/sdk-r5/
 .kotlin/
 __pycache__/
 *.pyc

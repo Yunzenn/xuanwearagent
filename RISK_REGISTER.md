@@ -2,8 +2,16 @@
 
 | 风险 | 等级 | 处置 |
 |---|---|---|
+| LIVE2D-ARM64-16K | BLOCKED BY UPSTREAM / RELEASE BLOCKER | ARM64 RELRO静态FAIL；与P2B-RUNTIME分离，不无限阻止4KB开发。llvm-readelf复核待做；不改闭源SO、不从其他runtime偷换Core |
+| R5 Core ARM64/x86 RELRO末端未16KB对齐 | OPEN / STATIC FAIL | LOAD段均通过但RELRO余数非0；未做运行复现，不修改闭源SO、不自动换版。详见 LIVE2D_BINARY_AUDIT.md；最终APK及16KB环境仍待验 |
 | CD12Max 实际 ABI/GL/音频能力未知 | P0C TARGET VALIDATION PENDING | 2026-09-25 ADB 无设备；先完成 Device Probe，禁止提前锁定方案 |
 | Cubism Core 或模型授权不适合分发 | P0 | Gate B 前完成 SDK/资产条款审查 |
+| 当前 Cubism Java 已移除 ARMv7 | P2B-ABI-GATE OPEN | 官方声明 ARM64/x86/x86_64；实际 AAR 未审计，CD12Max ABI 未知；若仅 armeabi-v7a，审计配套旧官方 release，禁止自研 renderer |
+| Cubism Core 制品配套未核验 | P2B-0 OPEN | 用户独立复核 Samples 冻结 commit 与 R5 tag 的 tree 均为 b48b56c447adc7738b84a36047ae635a9f384f59，Framework gitlink 相同，无须迁移源码；Core 仍须独立核验官方来源、ZIP/AAR哈希、API/minSdk、ELF/ABI、16KB及许可 |
+| EXPANDABLE_APPLICATION | RELEASE BLOCKER | 用户导入任意模型涉及可扩展应用分类；发布前由 Live2D 确认分类并取得适用特殊 Publication License，不套用个人/小规模一般豁免。独立于开发和 Runtime Gate；见 PHASE_2B_REUSE_GATE.md 官方来源 |
+| 模型导入覆盖旧 Avatar / ZIP 资源耗尽 | DESIGN MITIGATED / IMPLEMENTATION PENDING | 不原样复制 Wanyu 先删除旧目录逻辑；staging、有界输入/展开、路径/引用/纹理检查、Core load 后原子激活 |
+| SDK 与自定义驱动重复更新 / 嘴型超前播放 | DESIGN MITIGATED / IMPLEMENTATION PENDING | 官方 updater 单一所有权；既有 PCM 唯一音源；嘴型对齐播放并随 flush/generation 清空 |
+| Manager 与设备 token 混用 / 本地人格双事实源 | STATIC AUDIT COMPLETE / Runtime pending | Manager 查用户 token 与 Agent 所有权；HTTP200仍可能业务认证失败；本地只展示覆盖，voice/systemPrompt以服务端为准 |
 | Server hello 与实际 TTS Opus 采样率不一致 | P0C STATIC PASS / Runtime pending | 冻结 commit 的 bug 已由先红后绿测试复现并修复；Server Hello 与 TTS encoder 均由 `conn.sample_rate` 驱动，预建 encoder 有一致性守卫；仍需真实 TTS Opus 24k 解码验证后关闭 |
 | OTA/activation 字段与参考客户端漂移 | P0 | 从 rokid-xiaozhi 抽取并做契约测试 |
 | WebSocket v1 二进制无 turn id 导致旧音频回放 | MITIGATED / Phone pending | SessionCoordinator 中央连接/epoch 过滤；abort 先 flush、再发送、再换连接。encoded/PCM 队列竞态与模拟器 AudioTrack pause/flush 已验证；手机听感仍待测，TTS stop 不等于播放完毕 |

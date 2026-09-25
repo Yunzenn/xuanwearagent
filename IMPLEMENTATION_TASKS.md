@@ -75,3 +75,49 @@ Phase 1A 已通过；Phase 1B 用户审查通过，minor follow-up 已落地：�
 - [ ] 真实Xiaozhi STT/LLM/TTS联调，暂无端点
 
 C-A本地软件PASS；C-B模拟器软件稳定性PASS；C-C参考手机PENDING；C-D真实服务器PENDING；C-E CD12Max TARGET VALIDATION PENDING。
+
+## Phase 2A — Product Shell + Static Avatar（并行开发）
+
+状态：**PASS（用户审查）**。不等于 Live2D、真实服务器或目标设备验收通过。
+
+用户批准与Phase 1C设备/服务器验收并行。不是完整Phase 2或Live2D验收通过。
+
+- [x] 产品Home成为启动入口；原Probe/Debug保留在设置的工程诊断入口
+- [x] 静态形象、角色名、字幕与连接/录音/等待/回复状态；沿用现有前台会话
+- [x] 角色名本地保存；Character与Avatar文件独立
+- [x] SAF图片选择 → 大小/格式/像素校验 → 缩放 → 私有PNG原子写入
+- [x] HTTPS Bootstrap地址保存/清除；禁止明文、userinfo、query、fragment；不存WS令牌
+- [x] Voice/Personality/Live2D明确显示未接入或由服务器控制，不假装生效
+- [ ] Live2D SDK集成、ZIP/AvatarPack、安全策略和三层映射配置
+- [ ] 真实服务器主页对话/字幕/激活联调
+- [ ] 手机与CD12Max屏幕、音频和性能验收
+
+构建与模拟器证据见PHASE_2A_REPORT.md。维持三模块及minSdk28，未增加依赖。
+
+## Phase 2B — Reuse-first Runtime / Avatar
+
+Gate拆分：P2B-RUNTIME PENDING（见LIVE2D_RUNTIME_VALIDATION.md）与LIVE2D-ARM64-16K BLOCKED BY UPSTREAM / RELEASE BLOCKER。当前运行准备停在独立模型许可确认；未开始Home集成。交接见HANDOFF.md。
+
+最新二进制审计见 LIVE2D_BINARY_AUDIT.md：官方R5制品已取得，Framework静态API编译通过，实际ABI为ARM64/x86/x86_64；16KB RELRO发现ARM64/x86异常。Runtime未执行，P2B-0仍NOT PASS，未进入P2B-1。
+
+本轮仅完成源码复用与 Manager auth 静态审计，见 PHASE_2B_REUSE_GATE.md、MANAGER_API_AUTH_AUDIT.md。
+
+- [ ] P2B-0 / P2B-ABI-GATE：源码 ABI 声明已核；用户 SDK/模型许可确认、Core AAR 哈希/ABI/版本配套与 runtime 仍待完成。目标仅 ARMv7 时审计旧官方版本，不自研 renderer。
+- [ ] P2B-1：官方 Framework/Core + 合法测试模型；模拟器/参考手机运行
+- [ ] P2B-2：官方 metadata 与参数 API → AvatarRuntimeInfo
+- [ ] P2B-3：Wanyu 流程适配 + 有界输入/staging/安全策略/原子切换
+- [ ] P2B-4：Live2D Home renderer，沿用官方生命周期
+- [ ] P2B-5：三层配置持久化与本地展示/服务端人格边界
+- [ ] P2B-6：EmotionMapper 导入时自动建议
+- [ ] P2B-7：用户 Mapping Editor，保存结果为权威
+- [ ] P2B-8：既有 PCM → RMS/shaping → 可配置嘴型；禁止第二播放链
+- [ ] P2B-9：Xiaozhi emotion → 已保存的 expression/motion 映射
+- [x] P2B-10：Manager 用户认证及 Agent/Voice API 静态审计；真实登录/权限/更新联调仍 PENDING
+
+用户复审：P2B-0 复用设计、Manager 静态审计、Live2D source/API 审计 PASS；许可意识 PASS WITH RELEASE GATE；Core 制品与双模型生命周期 Runtime PENDING；overall NOT PASS。完整制品/Runtime 检查清单见 PHASE_2B_REUSE_GATE.md，取得官方 SDK 前不继续堆基础设施或改 App。
+
+Phase 2B 的 Manager 范围仅 XiaozhiAgentRepository 接口契约。登录页、验证码/SM2、token 持久化和真实授权 UX 全部移入 Phase 2C，先决定手机配对/一次性授权/受限 adapter，再实施。
+
+独立发布任务：EXPANDABLE_APPLICATION / RELEASE BLOCKER；核实 Live2D 分类并取得适用发布许可。不阻止合法开发验证，不随 P2B-0 PASS 自动关闭。
+
+不迁移 Compose/Hilt/Room/NDK，不自写模型或动画引擎，不新建 Voice/Personality 后端。CD12Max C3 保持 TARGET VALIDATION PENDING。

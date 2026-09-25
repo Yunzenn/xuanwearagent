@@ -91,3 +91,7 @@ CPU和RSS包括同进程Mock服务及测试框架，不代表产品或CD12Max功
 | C-E CD12Max | TARGET VALIDATION PENDING | ABI/GL/ROM/性能/温度/功耗 |
 
 Phase 0C C4仍为STATIC PASS / Runtime pending；Phase 1C整体仍为IN PROGRESS。首次失败与修复后结果同时保留，未删减原测试。
+
+## 联想模拟器补充验证
+
+复用同一APK，Android9/API28运行600328ms，751轮、75次打断重连，instrumentation 5/5通过。用户确认能听到短音；尾样本丢弃0、overload0、partial-write65、underrun1831。没有修改音频代码或队列参数，没有将听到声音等同无卡顿。详见 `LENOVO_EMULATOR_VALIDATION.md` 与独立原始指标 `evidence/reports/lenovo-emulator-audio-soak.json`。参考手机、真实服务器、CD12Max及C4 runtime状态均不变。

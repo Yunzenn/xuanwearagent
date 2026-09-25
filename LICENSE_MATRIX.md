@@ -14,4 +14,16 @@
 
 说明：本矩阵不是法律意见。第三方依赖和用户导入模型资产仍需独立审查。
 
+**EXPANDABLE_APPLICATION / RELEASE BLOCKER**：本产品允许用户导入不同模型，需向 Live2D 确认可扩展应用分类及特殊 Publication License；不按个人/小规模主体的一般豁免放行发布。[官方规则](https://www.live2d.com/en/sdk/license/expandable/)（2026-09-25 核查）。开发许可、模型许可与发布许可分别验收。Core 仅从官方 SDK 下载取得，禁止借用第三方仓库 Core 二进制。详见 PHASE_2B_REUSE_GATE.md。
+
+## Phase 2B 补充（2026-09-25）
+
+| 来源与冻结 SHA | License 文件 | 采用与义务 |
+|---|---|---|
+| CubismJavaFramework `ed15cb21a466893381d1dbddce0da943c7fe9a0f` | `/LICENSE.md` | Live2D Open Software License；与 Core 专用许可和模型许可分开。尚未引入应用；不得代用户接受下载许可 |
+| JieRobot/wanyu-ai-android `f873e137e224192fbac72021536054ed4a5ad044` | `/LICENSE` | MIT，Copyright (c) 2026 陈兵。未来实质改编保留版权与全文许可；当前仅审计 |
+| moeru-ai/airi `a142a053fdc304666ba7caf8462678b79187f8ea` | `/LICENSE` | MIT，Copyright (c) 2024-PRESENT Neko Ayaka。实质复制需保留；当前仅参考思想 |
+
+Core AAR 未下载，SDK/模型许可等待用户本人审查；商业发布资格与资产分发另审，不能由本次源码审计推导获准。项目作者使用 yunzenn；第三方合法版权头不得删除或冒名替换。证据与范围见 PHASE_2B_REUSE_GATE.md。
+
 Phase 1C Concentus 采用记录：`third_party/concentus/concentus-3885c4e-java.zip` 为冻结 commit 的原始 Java 源码和 LICENSE 归档，未修改 codec，所有原文件版权头保留。生成 JAR 包含 `META-INF/concentus/LICENSE`；APK 分发材料为 `assets/licenses/concentus-LICENSE.txt`。没有引入仓库的原生 Opus 预编译二进制。
