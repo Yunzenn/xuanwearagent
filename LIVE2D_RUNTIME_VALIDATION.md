@@ -1,6 +1,6 @@
 # P2B-RUNTIME validation
 
-状态：**PASS（限定范围：x86_64 / 4 KB 页 / API 28 模拟器）**，其中逐特性归因除了 **pose = N/A BY ASSET** 之外全部实测通过。ARM64 真实手表行仍 NOT RUN；P2B-0 整体不因本结果 PASS，因为 ARM64 16 KB RELRO 静态 FAIL 仍是独立 Release Gate。
+状态：**PASS WITH OBSERVATIONS（限定范围：x86_64 / 4 KB 页 / API 28 模拟器）**。逐特性归因除 **pose = N/A BY ASSET** 外全部实测通过。观察项：软件 GL 下间歇 `GL_INVALID_VALUE (0x501)`（已裁定为 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSERVATION`，ARM64 上不得沿用该解释，三分支裁定见 `HANDOFF.md`）。ARM64 真实手表行仍 NOT RUN；**P2B-0 整体 NOT PASS，下一硬 Gate 即 ARM64 参考手机**（唯一阻塞是外部条件"没有手机"）；ARM64 16 KB RELRO 静态 FAIL 仍是独立 Release Gate。
 
 本轮把「没有 GL 报错」升级为像素级、参数级、并进一步升级为**逐特性可归因**的证据：模型必须真的画出来、画面必须真的在变、参数必须真的被驱动，而且**每个特性的驱动者必须由关闭对照实验证明**。证书见 `evidence/reports/cubism-runtime-smoke.txt` 与 `evidence/reports/cubism-feature-attribution.txt`，可复现脚本 `evidence/tests/run_cubism_smoke.ps1`。
 

@@ -1,5 +1,73 @@
 # Handoff — Live2D Runtime Gate
 
+## 冻结裁决（用户 2026-09-25 裁定，以此为当前状态权威）
+
+```
+x86_64 Runtime Gate          PASS WITH OBSERVATIONS    证据提交 d76dd77，已冻结
+P2B-0 overall                NOT PASS                  下一硬 Gate = ARM64 参考手机
+ARM64 runtime                PENDING                   ← 唯一阻塞项是"没有手机"这一外部条件
+CD12Max                      TARGET PENDING
+ARM64 16KB                   RELEASE BLOCKER / UPSTREAM
+DEBUG-ONLY P2B-1             NOT AUTHORIZED            手机通过前不得把 Live2D 搬进 Home
+```
+
+**下一动作是"停"，不是"继续做 x86"**。等一台普通 ARM64 4 KB Android 手机接入后，只执行现成命令，
+**不得临时重写 harness**：
+
+```powershell
+D:\AIwatch\evidence\tests\run_cubism_smoke.ps1 -Serial <serial>
+```
+
+重点取证：Core native load/`getVersion`、双模型、pixel output、expression、physics、
+GL surface recreation、background/resume、clean release、**以及 GL error 日志**。
+不要求把 x86 的四轮 attribution 在 ARM64 完整复制一遍。
+
+手机通过后的推进路径：`P2B-0 Runtime Gate → PASS FOR DEV`（ARM64_16K 与 CD12Max 仍各自独立挂起），
+**之后才**授权 `DEV-ONLY P2B-1`。
+
+### 冻结边界 1：ARM64 上若出现同一 `GL_INVALID_VALUE`，不得沿用"模拟器驱动怪癖"解释
+
+x86 软件 GL 上的偶发 `0x501` 已按 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSERVATION` 处理，允许不阻塞 ARM64 取证，
+但**不得永久忽略**。ARM64 上按此三分支裁定：
+
+| ARM64 观察 | 裁定 |
+|---|---|
+| 无 GL error | 该风险可基本降为 emulator-specific observation |
+| 出现 `0x501`，但无视觉/生命周期异常 | 继续调查，**P2B-0 暂不完全 PASS** |
+| `0x501` 关联黑帧 / 缺 mask / 崩溃 / 恢复失败 | **BLOCKER** |
+
+### 冻结边界 2：产品禁止照搬官方 Sample 的 Activity 单例
+
+官方 sample 用进程级 static singleton 持有 Activity（`LAppPal`/`LAppDelegate`/`LAppLive2DManager`），
+已实测导致同进程内多测试生命周期互相污染（renderer / CubismShader / Delegate 状态残留）。
+harness 用"一测试方法一进程"作为**证据手段**可以，**产品层不得靠重启进程解决生命周期**。
+
+产品必须改成显式所有权链，Activity 销毁时明确释放：
+
+```
+Activity / View lifecycle
+        ↓
+CubismRuntimeOwner
+        ↓
+Renderer instance
+        ↓
+Model instance
+```
+
+明确禁止照搬 `LAppDelegate` 单例持有 Activity、`LAppLive2DManager` 绑定 Activity 的全局单例。
+
+### 冻结边界 3：UTP 不再处理
+
+```
+connectedAndroidTest / UTP     INFRASTRUCTURE BROKEN
+adb install + am instrument    VALIDATED WORKAROUND
+Cubism Runtime Gate            NOT BLOCKED
+```
+
+除非将来正式 CI 必须依赖 UTP，否则不修——纯属消耗额度。
+
+---
+
 P2B-RUNTIME 已在**限定范围**内跑通并通过：x86_64 / 4 KB 页 / API 28 模拟器。ARM64 真实手表行仍 NOT RUN；P2B-0 整体未 PASS（ARM64 16 KB RELRO 静态 FAIL 仍是独立 Release Gate）。产品 Home 集成（P2B-1）**未开始**。
 
 ## 本次实际进展
@@ -48,6 +116,25 @@ P2B-RUNTIME 已在**限定范围**内跑通并通过：x86_64 / 4 KB 页 / API 2
 7. 完成上述并复现证据后，才可请求 DEV-ONLY P2B-1 Home 集成。
 8. **若需 pose 行为级证据**：另找一个 `pose3.json` 含非空 `Link` 的合法模型覆盖该项；获批的 Haru/Hiyori 不具备该条件，不应为了凑证据而改用未获批资产。
 9. 归因实验目前只在 x86_64 模拟器上跑过；若在 ARM 设备上重复，注意 `CubismUpdateScheduler.cubismUpdatableList` 是私有字段，反射路径随框架版本可能变化。
+
+## P2B-1 验收前置条件（先记在这里，避免被后续"清理 Gradle 配置"再次引入）
+
+- **不能把「Framework Java sources compile」等同于「Cubism Framework packaged correctly」。** 官方框架的 GLSL shader 在
+  `Framework/framework/src/main/assets/com/live2d/sdk/cubism/framework/shaders/standardES/`，由
+  `CubismShaderAndroid` 在**运行时**加载。已实测证明：`Java 源码编译 PASS + AAR 打包 PASS + APK 安装 PASS`
+  三者全绿，**仍然不等于** Cubism runtime PASS——只挂 `java.srcDirs` 会编译打包一切正常、到设备上才因缺 shader 崩溃。
+- P2B-1 至少要三层断言，缺一层都不算覆盖：
+
+  ```
+  APK/AAB package assertion  → 所需 36 个 shader 全部存在
+  Runtime assertion          → CubismShader 实际读取成功
+  GL recreation              → shader reload / rebuild 成功
+  ```
+
+  第 1 层的校验方式可参照本轮 `evidence/reports/cubism-runtime-smoke.txt` 的做法；第 2、3 层必须在真机上跑，
+  而不是只验证编译与安装。
+- 产品侧禁止照搬官方 sample 的 Activity 单例生命周期，必须改成「冻结边界 2」给出的显式所有权链
+  （`Activity/View lifecycle → CubismRuntimeOwner → Renderer instance → Model instance`）。
 
 ## Git 边界
 
