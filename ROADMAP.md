@@ -48,7 +48,7 @@ chosen deliberately (streaming vs utterance) because it drives the latency budge
 ## Roadmap
 
 ```
-P0-1  Companion Home (done except the avatar art and the density fix)
+P0-1  Companion Home (density fix done; avatar art still pending)
 P0-2  real-time voice loop: PTT -> capture -> ASR -> LLM -> streamed TTS -> playback
 P0-3  core-memory: MemoryGateway + Room cache
 P0-4  memory backend (typed store; candidate retrieval)

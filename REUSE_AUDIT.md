@@ -199,3 +199,30 @@ fetch were unavailable in this session. No code may be reused until that verific
 Decision: build the Xiaozhi shell ourselves on `core-audio` + `core-protocol` + the Phase 2A Home, taking
 **patterns only** — no code, no architecture. CD12Max is Full Android rather than Wear OS, so
 Wear-OS-bound bases are excluded by construction, not by preference.
+
+## Memory / voice references (2026-09-26, verified)
+
+Unlike the table above, the licences below were checked **directly against each repository's LICENSE file**
+by the user, not merely reported. Recorded so the reuse gate can cite a verified source rather than a claim.
+
+| Project | Licence | Status | Intended use |
+|---|---|---|---|
+| `JieRobot/wanyu-ai-android` | MIT | **VERIFIED** | Primary schema/design reference for `core-memory`: `MemoryRepository`, `UserProfileEntity`, `MemoryEntity`, `MemoryLinkEntity`, `EmotionEngine`; importance, time decay, staged confirmation, dedup, character scoping |
+| `mem0ai/mem0` | Apache-2.0 | **VERIFIED** | Backend memory store and candidate-retrieval substrate |
+| `samdotmak/jev-recall` | MIT | **VERIFIED** | Conditional second-stage reranker (P0-6) |
+| `libingzheren/Jev-Mem` | MIT | **VERIFIED** | P1+ A/B experiment only; Python 3.11 research backend, never on-device, never a P0 blocker |
+
+`Voine/ChatWaifu_Mobile` stays **REFERENCE ONLY**: its README states the bundled models may not be used
+commercially, and its code licence was not confirmed.
+
+**One canonical schema, not three memories.** The typed `CanonicalMemory` (PROFILE / EVENT / EPISODE /
+RELATION, with importance, timestamp, source, character scope and provenance) is the semantics. Mem0 and any
+vector store are implementation substrates underneath it; Jev Recall is a conditional reranker on top. No
+component other than `CanonicalMemory` may describe itself as "the memory".
+
+Reranking is conditional by hard rule, not by future optimisation — the voice path has a latency budget:
+
+```
+small talk / the current turn already carries the needed context   -> no rerank
+PROFILE or EVENT query, near-tied candidate scores, or cross-event association   -> Jev Recall
+```

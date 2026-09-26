@@ -1,6 +1,7 @@
 package com.aiwatch.live2d
 
 import android.opengl.GLES20
+import android.os.Build
 import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -27,6 +28,7 @@ internal class PlainShaderProbe {
     private var program = 0
     private var positionLocation = -1
     private var prepared = false
+    private var capabilitiesLogged = false
 
     /** Human-readable outcome of the most recent [draw], for the instrumentation test to read. */
     @Volatile
@@ -50,6 +52,29 @@ internal class PlainShaderProbe {
 
         prepare()?.let { reason ->
             return "PLAINSHADER outcome=FAIL stage=prepare reason=$reason".also { lastResult = it }
+        }
+
+        // Device capability read (B1/B2). Independent of Live2D: the two values that decide whether an
+        // 8192x8192 atlas can exist on this GPU at all, and whether our ABI set matches the ROM.
+        // Read from the same context the product uses, because a ROM's dumpsys values are not reliable.
+        if (!capabilitiesLogged) {
+            capabilitiesLogged = true
+            val maxTexture = IntArray(1)
+            val maxTextureUnits = IntArray(1)
+            val maxRenderbuffer = IntArray(1)
+            GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_SIZE, maxTexture, 0)
+            GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS, maxTextureUnits, 0)
+            GLES20.glGetIntegerv(GLES20.GL_MAX_RENDERBUFFER_SIZE, maxRenderbuffer, 0)
+            Log.i(
+                TAG,
+                "GLES_CAPABILITY maxTextureSize=${maxTexture[0]} " +
+                    "maxTextureImageUnits=${maxTextureUnits[0]} " +
+                    "maxRenderbufferSize=${maxRenderbuffer[0]} " +
+                    "abis=${Build.SUPPORTED_ABIS.joinToString(",")} " +
+                    "abis64=${Build.SUPPORTED_64_BIT_ABIS.joinToString(",")} " +
+                    "supports8192Atlas=${maxTexture[0] >= 8192} " +
+                    "supportsArm64=${Build.SUPPORTED_ABIS.contains("arm64-v8a")}",
+            )
         }
 
         // Set every state bit that could suppress a fragment, explicitly, rather than trusting the caller.
