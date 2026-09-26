@@ -4,75 +4,122 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.Window
+import com.aiwatch.probe.ProbeApplication
 import com.aiwatch.probe.character.AvatarProviders
 import com.aiwatch.probe.character.CharacterProfile
 import com.aiwatch.probe.conversation.ConversationController
 import com.aiwatch.probe.conversation.ConversationState
 import com.aiwatch.probe.conversation.MessageItem
 import com.aiwatch.probe.product.SettingsActivity
-import com.aiwatch.probe.voice.ScriptedVoiceSessionAdapter
-import com.aiwatch.probe.voice.VoiceSessionAdapter
+import com.aiwatch.probe.voice.XiaozhiVoiceSession
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
- * P0-1 launcher: the wrist companion's Home.
+ * P0-2A launcher: the wrist companion's Home, now driven by the real Xiaozhi voice session.
  *
- * Thin by design. It owns the profile, a [ConversationController] and a [VoiceSessionAdapter], and does
- * nothing but forward between them and [CompanionHomeView] — the brief explicitly rules out growing
- * another oversized Activity.
+ * Thin by design. It owns the profile, the [XiaozhiVoiceSession], and the wiring between that session and
+ * [CompanionHomeView]. No conversation logic lives here:
  *
- * The Phase 2A [com.aiwatch.probe.product.HomeActivity] is untouched and still startable; it remains the
- * regression entry point for the Live2D fallback.
+ *  - the four visible states come from the coordinator's conversation machine (`uiState`),
+ *  - the transcript comes from STT and TTS text,
+ *  - push-to-talk maps to begin/end capture,
+ *  - barge-in is the coordinator's own interrupt ordering, not a rule re-implemented here.
+ *
+ * The scripted `ConversationController` remains reachable through [EXTRA_SCRIPTED_CONVERSATION] so the
+ * P0-1 shell test stays deterministic and an endpoint-less build can still demonstrate the UI. The
+ * default path is the real session.
  */
-class CompanionActivity : Activity(), ConversationController.Listener {
+class CompanionActivity : Activity() {
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var home: CompanionHomeView
-    private lateinit var controller: ConversationController
-
-    /** P0-1 records nothing; swapping this for the core-audio adapter is the whole of P0-2's UI change. */
-    private val voiceSession: VoiceSessionAdapter = ScriptedVoiceSessionAdapter()
-
     private val profile: CharacterProfile = CharacterProfile.developmentDefault()
+
+    /** Production path. */
+    private var voice: XiaozhiVoiceSession? = null
+
+    /** Test double / no-endpoint demo, selected by [EXTRA_SCRIPTED_CONVERSATION]. */
+    private var scripted: ConversationController? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
 
-        controller = ConversationController(this)
-        home = CompanionHomeView(this).apply {
-            onPushToTalkStart = {
-                voiceSession.onCaptureStarted()
-                controller.onPushToTalkPressed()
-            }
-            onPushToTalkEnd = {
-                controller.onPushToTalkReleased()
-                voiceSession.onCaptureReleased()
-            }
-            onSettingsClick = { startActivity(Intent(this@CompanionActivity, SettingsActivity::class.java)) }
+        home = CompanionHomeView(this)
+        setContentView(home)
+        home.bind(profile, AvatarProviders.forSource(profile.avatar))
+        home.onSettingsClick = {
+            startActivity(Intent(this@CompanionActivity, SettingsActivity::class.java))
         }
 
-        home.bind(profile, AvatarProviders.forSource(profile.avatar))
-        // Opening state: a greeting already on screen, so Home never looks empty on first launch.
+        if (intent.getBooleanExtra(EXTRA_SCRIPTED_CONVERSATION, false)) {
+            startScriptedConversation()
+        } else {
+            startVoiceSession()
+        }
+    }
+
+    private fun startVoiceSession() {
+        val app = application as ProbeApplication
+        // Empty until the customer deploys a reachable HTTPS bootstrap. The session logs and stays idle
+        // rather than pretending to be connected; nothing is faked.
+        val endpoint = runCatching { app.productStore.server().endpoint }.getOrDefault("")
+        val session = XiaozhiVoiceSession(app, endpoint)
+        voice = session
+
+        home.onPushToTalkStart = { session.onCaptureStarted() }
+        home.onPushToTalkEnd = { session.onCaptureReleased() }
+
+        scope.launch { session.uiState.collect { home.renderState(it) } }
+        scope.launch { session.transcript.collect { home.renderMessages(it) } }
+
+        session.connect()
+    }
+
+    private fun startScriptedConversation() {
+        val controller = ConversationController(object : ConversationController.Listener {
+            override fun onMessagesChanged(messages: List<MessageItem>) = home.renderMessages(messages)
+
+            override fun onStateChanged(state: ConversationState) = home.renderState(state)
+        })
+        scripted = controller
+        home.onPushToTalkStart = { controller.onPushToTalkPressed() }
+        home.onPushToTalkEnd = { controller.onPushToTalkReleased() }
         controller.seedGreeting()
-        setContentView(home)
-    }
-
-    override fun onMessagesChanged(messages: List<MessageItem>) {
-        home.renderMessages(messages)
-    }
-
-    override fun onStateChanged(state: ConversationState) {
-        home.renderState(state)
     }
 
     override fun onPause() {
-        // Drop any queued script step so a backgrounded Home cannot pop back mid-exchange.
-        controller.cancel()
-        voiceSession.cancel()
+        // Never record in the background. The real session stays connected; only capture stops.
+        voice?.stopTalking()
+        scripted?.cancel()
         home.detach()
         super.onPause()
     }
 
-    /** For the P0-1 instrumentation assertions. */
-    val conversationState: ConversationState get() = controller.state
-    val conversationMessages: List<MessageItem> get() = controller.messages
+    override fun onDestroy() {
+        scope.cancel()
+        voice?.close()
+        voice = null
+        super.onDestroy()
+    }
+
+    /** For the P0-1 instrumentation assertions; reports whichever path is active. */
+    val conversationState: ConversationState
+        get() = scripted?.state ?: voice?.uiState?.value ?: ConversationState.IDLE
+
+    val conversationMessages: List<MessageItem>
+        get() = scripted?.messages ?: voice?.transcript?.value ?: emptyList()
+
+    companion object {
+        /**
+         * Runs the scripted conversation instead of the real session. The P0-1 shell test uses it so
+         * layout and state rendering can be asserted deterministically; it is also the only way to demo
+         * Home before a bootstrap endpoint exists.
+         */
+        const val EXTRA_SCRIPTED_CONVERSATION = "com.aiwatch.probe.SCRIPTED_CONVERSATION"
+    }
 }

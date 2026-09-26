@@ -15,6 +15,8 @@ import com.aiwatch.probe.character.AvatarStageView
 import com.aiwatch.probe.home.CompanionActivity
 import com.aiwatch.probe.product.HomeActivity
 import com.aiwatch.probe.voice.PushToTalkView
+import com.aiwatch.probe.voice.toUiState
+import com.aiwatch.protocol.ConversationState as ProtocolConversation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -59,9 +61,14 @@ class CompanionHomeTest {
     private fun flatten(view: View): List<View> = listOf(view) +
         if (view is ViewGroup) (0 until view.childCount).flatMap { flatten(view.getChildAt(it)) } else emptyList()
 
-    private fun launchCompanion(): CompanionActivity {
+    /**
+     * [scripted] selects the deterministic scripted conversation. It is off by default so the rest of
+     * these tests exercise the production voice path (which is expected to stay idle without an endpoint).
+     */
+    private fun launchCompanion(scripted: Boolean = false): CompanionActivity {
         val intent = Intent(instrumentation.targetContext, CompanionActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (scripted) intent.putExtra(CompanionActivity.EXTRA_SCRIPTED_CONVERSATION, true)
         return instrumentation.startActivitySync(intent) as CompanionActivity
     }
 
@@ -123,7 +130,7 @@ class CompanionHomeTest {
 
     @Test
     fun pushToTalkDrivesTheFourStatesAndAppendsBothSides() {
-        val activity = launchCompanion()
+        val activity = launchCompanion(scripted = true)
         try {
             assertTrue("stage never laid out", waitFor("stage laid out") {
                 flatten(activity.window.decorView).filterIsInstance<AvatarStageView>()
@@ -180,6 +187,69 @@ class CompanionHomeTest {
             println("COMPANION_LEGACY_HOME launched=${home.javaClass.name} mode=${home.currentAvatarMode}")
         } finally {
             instrumentation.runOnMainSync { home.finish() }
+            instrumentation.waitForIdleSync()
+        }
+    }
+
+    /**
+     * P0-2A, item 4. The protocol's conversation machine has five states and the UI shows four; the
+     * mapping is pure and is asserted here rather than inferred from a live socket, so a regression in
+     * the INTERRUPTING case cannot hide behind "we had no server to test against".
+     */
+    @Test
+    fun protocolConversationMapsOntoTheFourUiStates() {
+        val cases = mapOf(
+            ProtocolConversation.IDLE to ConversationState.IDLE,
+            ProtocolConversation.LISTENING to ConversationState.LISTENING,
+            ProtocolConversation.THINKING to ConversationState.THINKING,
+            ProtocolConversation.SPEAKING to ConversationState.SPEAKING,
+            // Interrupt path is Speaking -> INTERRUPTING -> LISTENING. Once the session reports
+            // INTERRUPTING the companion has stopped talking and the mic is off, so the four-state UI
+            // shows LISTENING rather than inventing a fifth visual state.
+            ProtocolConversation.INTERRUPTING to ConversationState.LISTENING,
+        )
+        cases.forEach { (protocol, expected) ->
+            val actual = protocol.toUiState()
+            println("P02A_STATE_MAP protocol=$protocol ui=$actual")
+            assertEquals("mapping for $protocol", expected, actual)
+        }
+    }
+
+    /**
+     * P0-2A, item 9. With no bootstrap endpoint the production path must stay honest: idle, no fabricated
+     * user turn, no crash. A real end-to-end run is deliberately NOT simulated here.
+     */
+    @Test
+    fun realVoicePathStaysIdleAndFabricatesNothingWithoutEndpoint() {
+        val activity = launchCompanion(scripted = false)
+        try {
+            assertTrue("stage never laid out", waitFor("stage laid out") {
+                flatten(activity.window.decorView).filterIsInstance<AvatarStageView>()
+                    .any { it.width > 0 && it.height > 0 }
+            })
+            // The greeting is local, so Home is not an empty panel even before any connection exists.
+            assertTrue("greeting missing", waitFor("greeting") {
+                activity.conversationMessages.isNotEmpty()
+            })
+            val authorsBefore = onMain { activity.conversationMessages.map { it.author } }
+
+            val ptt = onMain { pushToTalk(activity) }
+            touch(ptt, MotionEvent.ACTION_DOWN)
+            SystemClock.sleep(400)
+            touch(ptt, MotionEvent.ACTION_UP)
+            SystemClock.sleep(1_500)
+
+            val state = onMain { activity.conversationState }
+            val authorsAfter = onMain { activity.conversationMessages.map { it.author } }
+            println("P02A_REAL_PATH state=$state authorsBefore=$authorsBefore authorsAfter=$authorsAfter")
+            assertEquals("state must not leave IDLE without a session", ConversationState.IDLE, state)
+            assertEquals(
+                "no user turn may be invented without an endpoint",
+                authorsBefore.count { it == MessageAuthor.USER },
+                authorsAfter.count { it == MessageAuthor.USER },
+            )
+        } finally {
+            instrumentation.runOnMainSync { activity.finish() }
             instrumentation.waitForIdleSync()
         }
     }

@@ -23,6 +23,12 @@ class PlaybackQueue(
     private val sink: PcmPlaybackSink,
     private val maxEncodedPackets: Int = 8,
     private val maxPcmFrames: Int = 2,
+    /**
+     * Latency instrumentation only: fired once, on the first sink write that actually accepted samples.
+     * This is the earliest moment audio can become audible, so it is what `t_release -> first audible
+     * sample` is measured against. Invoked outside the queue lock.
+     */
+    private val onFirstSinkWrite: (() -> Unit)? = null,
 ) : Closeable {
     init { require(maxEncodedPackets > 0 && maxPcmFrames > 0) }
     private data class Pcm(val data: ShortArray, var offset: Int = 0)
@@ -39,6 +45,7 @@ class PlaybackQueue(
     private var partialWrites = 0L
     private var overloads = 0L
     private var writtenSamples = 0L
+    private var firstWriteReported = false
     val metrics: PlaybackMetrics get() = synchronized(lock) {
         PlaybackMetrics(encodedPeak, pcmPeak, partialWrites, overloads, if (closed) 0 else sink.underrunCount, writtenSamples)
     }
@@ -94,6 +101,7 @@ class PlaybackQueue(
                 }
             } finally { synchronized(lock) { decoding = false } }
         }
+        var reportFirstWrite = false
         synchronized(lock) {
             if (closed || pcm.isEmpty()) return
             val head = pcm.first
@@ -104,7 +112,13 @@ class PlaybackQueue(
             writtenSamples += written
             head.offset += written
             if (head.offset == head.data.size) pcm.removeFirst()
+            if (written > 0 && !firstWriteReported) {
+                firstWriteReported = true
+                reportFirstWrite = true
+            }
         }
+        // Outside the lock: the callback only records a timestamp, but it must not be able to re-enter.
+        if (reportFirstWrite) onFirstSinkWrite?.invoke()
     }
 
     override fun close() = synchronized(lock) {
