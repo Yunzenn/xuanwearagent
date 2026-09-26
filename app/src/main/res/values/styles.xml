@@ -5,4 +5,16 @@
         <item name="android:navigationBarColor">#101820</item>
         <item name="android:statusBarColor">#101820</item>
     </style>
+
+    <!-- P0-1 companion Home: OLED-dark surface. Scoped to CompanionActivity so the Phase 2A screens keep
+         the light probe theme they were validated with. -->
+    <style name="CompanionTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">#0D1110</item>
+        <item name="android:colorBackground">#0D1110</item>
+        <item name="android:navigationBarColor">#0D1110</item>
+        <item name="android:statusBarColor">#0D1110</item>
+        <item name="android:colorAccent">#CAE8B3</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

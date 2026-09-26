@@ -13,13 +13,21 @@
         <activity android:name=".DebugSessionActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="false" />
         <activity android:name=".product.SettingsActivity" android:exported="false" />
+        <!-- P0-1 launcher: the wrist companion Home. -->
         <activity
-            android:name=".product.HomeActivity"
-            android:exported="true">
+            android:name=".home.CompanionActivity"
+            android:exported="true"
+            android:theme="@style/CompanionTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Phase 2A / Live2D regression entry point. Intentionally still startable on its own. -->
+        <activity
+            android:name=".product.HomeActivity"
+            android:exported="true" />
     </application>
 </manifest>

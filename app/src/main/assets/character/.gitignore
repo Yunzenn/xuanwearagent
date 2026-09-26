@@ -1,0 +1,9 @@
+# Dev-only character art.
+#
+# The customer's Mahiro assets are not redistributable and are explicitly excluded from the packaged
+# build (P0-1 constraint 14); the still that ships alongside them is a watermarked promo card and is
+# unusable. Drop a clean, licensed still here as `stage.png` during local development and
+# AssetAvatarProvider picks it up. A fresh clone has nothing here and the stage falls back to its
+# designed placeholder, so this directory existing or not never breaks the build.
+*
+!.gitignore
