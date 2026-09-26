@@ -4,13 +4,18 @@ import android.os.SystemClock
 import android.util.Log
 import com.aiwatch.audio.AndroidAudioCaptureSource
 import com.aiwatch.audio.AndroidPcmPlaybackSink
+import com.aiwatch.audio.AudioCaptureSource
 import com.aiwatch.audio.ConcentusOpusCodec
 import com.aiwatch.audio.PcmFrameAccumulator
+import com.aiwatch.audio.PcmPlaybackSink
 import com.aiwatch.audio.PlaybackQueue
 import com.aiwatch.probe.ProbeApplication
 import com.aiwatch.probe.conversation.MessageAuthor
 import com.aiwatch.probe.conversation.MessageItem
 import com.aiwatch.protocol.BootstrapRepository
+import com.aiwatch.protocol.BootstrapResult
+import com.aiwatch.protocol.DeviceIdentity
+import com.aiwatch.protocol.SessionTransport
 import com.aiwatch.protocol.ConversationState as ProtocolConversation
 import com.aiwatch.protocol.PlaybackAudioConfig
 import com.aiwatch.protocol.ProtocolEvent
@@ -106,6 +111,32 @@ class XiaozhiVoiceSession(
     private val application: ProbeApplication,
     private val endpoint: String,
     client: OkHttpClient = OkHttpClient(),
+    /**
+     * v0.2 injection seam. Production always uses the real WebSocket transport; the contract harness
+     * supplies a fake so the session's own state machine, transcript, latency marks and barge-in
+     * behaviour can be exercised without a server. `SessionTransport` is already an interface, so this
+     * needs no change to `core-protocol`.
+     */
+    private val transport: SessionTransport = WebSocketTransport(client),
+    /** v0.2 injection seam for bootstrap, so the harness does not need a reachable HTTPS endpoint. */
+    private val bootstrapRequest: suspend (DeviceIdentity) -> BootstrapResult = { identity ->
+        BootstrapRepository(client).fetch(endpoint, identity, "p0-2a-companion")
+    },
+    /** v0.2 injection seam for capture, so the harness can drive synthetic PCM instead of a microphone. */
+    private val captureSource: () -> AudioCaptureSource = { AndroidAudioCaptureSource(application) },
+    /**
+     * v0.2 injection seam for the hardware output boundary. The contract harness keeps the real Opus
+     * decode and the real [PlaybackQueue] and only fakes the final sink write, so the glue under test is
+     * ours while the test stays deterministic and independent of AudioTrack.
+     */
+    private val playbackSinkFactory: (PlaybackAudioConfig) -> PcmPlaybackSink = {
+        AndroidPcmPlaybackSink(it)
+    },
+    /**
+     * v0.2 injection seam for time, so a harness can assert exact latencies instead of merely asserting
+     * that a timestamp is non-null.
+     */
+    private val monotonicClock: () -> Long = { SystemClock.elapsedRealtime() },
 ) : VoiceSessionAdapter {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -125,7 +156,6 @@ class XiaozhiVoiceSession(
     private val mutableUiState = MutableStateFlow(UiState.IDLE)
     val uiState: StateFlow<UiState> = mutableUiState.asStateFlow()
 
-    private val transport = WebSocketTransport(client)
     private val audioLock = Any()
 
     @Volatile
@@ -135,7 +165,7 @@ class XiaozhiVoiceSession(
     private var playbackConfig: PlaybackAudioConfig? = null
 
     @Volatile
-    private var capture: AndroidAudioCaptureSource? = null
+    private var capture: AudioCaptureSource? = null
 
     @Volatile
     var audioError: String? = null
@@ -160,12 +190,10 @@ class XiaozhiVoiceSession(
 
     val playbackMetrics get() = playback?.metrics
 
-    private val bootstrap = BootstrapRepository(client)
-
     val coordinator = SessionCoordinator(
         scope,
         { application.identityStore.getOrCreate() },
-        { bootstrap.fetch(endpoint, it, "p0-2a-companion") },
+        bootstrapRequest,
         transport,
         onEvent = ::onEvent,
         flushAudio = ::flush,
@@ -203,7 +231,7 @@ class XiaozhiVoiceSession(
         if (captureJob?.isActive == true || state.value.phase != SessionPhase.READY) return
         captureState.set(CaptureState.RECORDING)
         captureJob = scope.launch {
-            val source = AndroidAudioCaptureSource(application)
+            val source = captureSource()
             var generation: Long? = null
             var pendingFinalTail = 0
             val accumulator = PcmFrameAccumulator(960)
@@ -312,7 +340,7 @@ class XiaozhiVoiceSession(
                 val codec = ConcentusOpusCodec(event.audio)
                 val queue = PlaybackQueue(
                     codec::decodeDownlink,
-                    AndroidPcmPlaybackSink(event.audio),
+                    playbackSinkFactory(event.audio),
                     onFirstSinkWrite = ::onPlaybackSinkFirstWrite,
                 )
                 val wake = Channel<Unit>(Channel.CONFLATED)
@@ -426,7 +454,7 @@ class XiaozhiVoiceSession(
         }
     }
 
-    private fun now() = SystemClock.elapsedRealtime()
+    private fun now() = monotonicClock()
 
     // --- transcript ---------------------------------------------------------------------------
 
