@@ -1,0 +1,68 @@
+name: CI
+
+# Fresh-clone checks only.
+#
+# There is no :core-live2d job and no emulator job, and that is an architectural statement rather than
+# skipped coverage: the Cubism SDK may not be redistributed, so a GitHub runner has no SDK and
+# settings.gradle.kts does not include the module there. Device and runtime evidence stays a separate
+# evidence layer (see README and CONTRIBUTING).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-clone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Repository hygiene
+        run: |
+          set -eu
+          if [ -n "$(git ls-files third_party/live2d)" ]; then
+            echo "::error::proprietary Live2D files are tracked:"
+            git ls-files third_party/live2d
+            exit 1
+          fi
+          if [ -n "$(git ls-files app/src/main/assets/character)" ]; then
+            echo "::error::customer character assets are tracked:"
+            git ls-files app/src/main/assets/character
+            exit 1
+          fi
+          echo "repo hygiene: no proprietary or customer assets tracked"
+
+      - name: Assert :core-live2d is absent without the SDK
+        run: |
+          set -eu
+          if grep -q 'core-live2d' settings.gradle.kts && \
+             [ -d third_party/live2d/sdk-r5/CubismSdkForJava-5-r.5 ]; then
+            echo "::error::SDK present in CI image; this job assumes it is absent"
+            exit 1
+          fi
+          echo "no Cubism SDK in the checkout, as expected"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Make wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: JVM tests
+        run: ./gradlew :core-protocol:test :core-audio:test --console=plain
+
+      - name: Assemble app
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
