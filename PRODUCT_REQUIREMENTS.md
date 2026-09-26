@@ -259,6 +259,45 @@ P1+   Jev-Mem A/B
 
 **长期记忆在 P0，Live2D 在 P1。**
 
+### G3 Watch Operator —— 未来边界（已冻结）
+
+```text
+G1 真语音闭环  →  G2 长期记忆生效  →  G3 Watch Operator
+```
+
+> G3 Watch Operator is gated behind G1 and G2. No MCP capability advertisement, Accessibility
+> integration, or device-control dependency may enter the production path before the real P0-2 voice
+> E2E is measured.
+
+第一批工具只做 **5–8 个**最高频、native API 最稳的：
+
+```text
+get_battery / set_volume / launch_app / create_alarm·timer
+read_calendar / media play·pause / vibrate / （可选 brightness）
+```
+
+**Contacts / SMS / Location / Notification / Camera 第一批全部不进。** 这一条同时解决两个问题：隐私姿态，
+以及 tool schema 膨胀 —— 工具 schema 每轮都进 prompt，工具越多选错率越高、首字延迟越长，而
+`t_release → first_audio < ~1.2 s` 是 P0-2 的判定指标。因此**不允许全量 `tools/list` 暴露**。
+
+能力分档（硬规则）：
+
+```text
+自动执行     调音量 / 打开 App / 读本地电量
+首次授权     读取日历
+需要确认     创建日历事件 / 回复通知 / 修改设置
+强制确认     发短信 / 拨号 / 任何"离开设备"的动作
+```
+
+敏感能力（通知 / 通讯录 / 短信 / 位置 / 相机）必须：用户主动开启 + 明确说明哪些数据离开手表 + 高风险动作逐项确认
++ 调用日志用户可查 + 随时撤权。
+
+**协议现状（不要误解为"已经支持 MCP"）**：`core-protocol` 目前只有 `type="mcp"` 的**入站信封解析**
+（`ProtocolModels.kt:15`、`XiaozhiProtocol.kt:42`），**没有** device-MCP 会话实现 ——
+`initialize / tools/list / tools/call / response / list_changed / 出站构造` 全都仍是实际工作量。
+且打开 `features.mcp` 会改动 client hello，而那条 hello 正是**尚未在真实服务端验证过**的语音链路所依赖的。
+
+
 ---
 
 ## 16. 范围围栏（明确不做）
