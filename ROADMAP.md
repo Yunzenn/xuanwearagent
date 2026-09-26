@@ -24,7 +24,7 @@ panel (transcript and push-to-talk pushed off-screen) until `CompanionDimensions
 * **G1 — shippable, no Live2D required.** On the device: open app -> see the character -> hold to talk ->
   hear a reply -> correct state -> relaunch still works.
 * **G2 — memory works.** A day later it raises something she said before.
-* **G3 — optional.** Live2D / Mahiro avatar. Never blocks G1 or G2.
+* **G3 — Watch Operator.** Operating the watch through natural language. **V1 core, not optional.**
 
 ## Architecture: thin client
 
@@ -47,20 +47,12 @@ chosen deliberately (streaming vs utterance) because it drives the latency budge
 
 ## Roadmap
 
-```
-P0-1  Companion Home (density fix done; avatar art still pending)
-P0-2  real-time voice loop: PTT -> capture -> ASR -> LLM -> streamed TTS -> playback
-P0-3  core-memory: MemoryGateway + Room cache
-P0-4  memory backend (typed store; candidate retrieval)
-P0-5  user profile + events + long-term memory
-P0-6  second-stage rerank (Jev Recall)
-P0-7  proactive care / reminders
-P1    Live2D / Mahiro
-P1+   Jev-Mem A/B against Mem0 and the Wanyu-style schema, using our own real conversation data
-```
+**Superseded.** The single roadmap is the frozen product version line `v0.1 → v1.0` further down this file.
+The earlier `P0-1 … P1+` list that used to live here was a second, conflicting route and has been removed
+on purpose: two roadmaps in one plan-of-record is how the G3 definition drifted apart in the first place.
 
-Long-term memory is **P0**; Live2D is **P1**. For this user "does it remember what I said yesterday" matters
-far more than "does the hair move".
+For reference, the mapping is one-way: `P0-1 → v0.1`, `P0-2 → v0.2/v0.3`, `P0-3…P0-5 → v0.4/v0.5`,
+Watch Operator `→ v0.6/v0.7/v0.9`, `P1 (Live2D) → Visual Enhancement Gate`, `P1+ (Jev-Mem) → v0.5 A/B`.
 
 ## Memory model
 

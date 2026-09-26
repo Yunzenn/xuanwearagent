@@ -14,11 +14,13 @@
 | 可安装 APK | ✅ 可构建、可安装、可启动；启动页是 `CompanionActivity` |
 | **P0-1 Companion Home** | ✅ 角色舞台 + 聊天气泡 + 大号 PTT + 四态，尺寸已按真实密度 320dpi / 205×251dp 修正 |
 | 角色立绘 | ⚠️ **占位**。客户资产有版权限制且随附的静图带水印，未打包。放一张有授权的立绘进 `app/src/main/assets/character/` 即生效 |
-| **P0-2 真实语音闭环** | ❌ **未接通**。首页 PTT 目前只驱动脚本状态；真实音频链路在 `DebugAudioSession` / `DebugSessionActivity` 里已跑通 |
+| **P0-2 真实语音闭环** | ⚠️ **客户端已接通，真实 E2E 未验证**。首页 PTT 现在驱动真实的 `XiaozhiVoiceSession`（采集 / Opus / 协议 / 回放），四态来自协议状态机；缺的是一个可达的 HTTPS bootstrap endpoint，所以 `t_release → first_audio` 还没有实测数字 |
 | 长期记忆（P0-3~P0-7） | ❌ 未开始 |
 | Live2D 形象（P1） | ❌ **0 像素**。原因已收窄到 Cubism program/path；另有两道设备门槛未读 |
 
-**Gates**：`G1`（不依赖 Live2D 的可交付陪伴体验）= **未达成**；`G2`（记忆生效）= 未开始；`G3` = 可选，不阻塞。
+**Gates**：`G1`（真实语音闭环）= **未达成**（等 endpoint）；`G2`（记忆生效）= 未开始；`G3`（Watch Operator）= 未开始。
+
+**G1 / G2 / G3 三者都属于 V1**，Live2D 是独立的 Visual Enhancement Gate，不占 G 编号、不阻塞任何一个。
 
 ---
 
@@ -41,7 +43,7 @@ CD12Max
 
 | 模块 | 职责 |
 |---|---|
-| `:app` | `home/` 首页 · `conversation/` 对话 · `character/` 角色 · `voice/` 语音 · `theme/` token · `product/` Phase 2A 旧壳 |
+| `:app` | `home/` 首页 · `conversation/` 对话 · `character/` 角色 · `voice/` 语音 · `theme/` token。**对 Live2D 零编译依赖**（`HomeActivity` 已删除，manifest 无 Live2D Activity） |
 | `:core-audio` | PCM 组帧、Opus 编解码、播放队列、音频设备枚举（含单测） |
 | `:core-protocol` | Xiaozhi Protocol v1、bootstrap、WebSocket、会话状态机、interrupt（含单测） |
 | `:core-live2d` | Cubism 适配模块 + 产品 runtime + 设备能力/Live2D 无关的光栅化探针（**P1 可选**） |
@@ -63,9 +65,9 @@ $env:GRADLE_RO_DEP_CACHE= 'C:\Users\<你>\.gradle\caches'
 
 `compileSdk 35` · `minSdk 28` · `targetSdk 35` · `versionName 0.2.0-product-preview`
 
-> ⚠️ **fresh clone 无法直接构建。** 官方 Live2D SDK（`third_party/live2d/`）是 gitignored 的本地依赖，
-> `:core-live2d` 需要它。没有该 SDK 时请先排除 `:core-live2d`（见 `settings.gradle.kts`），
-> 或自备 `CubismSdkForJava-5-r.5`（`third_party/live2d/downloads/CubismSdkForJava-5-r.5.zip`）。
+> ✅ **fresh clone 可以直接构建。** 官方 Cubism SDK 不可再分发，所以 `settings.gradle.kts` **只在 SDK 根目录
+> 真实存在时才 include `:core-live2d`**。干净检出默认构建 `:app` / `:core-protocol` / `:core-audio`。
+> 要构建 Live2D 模块时，自备 `CubismSdkForJava-5-r.5` 放到 `third_party/live2d/sdk-r5/` 即可。
 
 ---
 
@@ -117,7 +119,7 @@ adb shell am instrument -w -e class 'com.aiwatch.probe.CompanionHomeTest#pushToT
    麦克风/扬声器、真实耗电与后台存活**全部未验证**。这是当前最大的风险。
 2. **Live2D 未出像素**，且 `GL_MAX_TEXTURE_SIZE` 未读——若 < 8192，Mahiro 原始 atlas 在这台设备上
    不可能直接上传。详见 `ROADMAP.md` 的两道设备门槛。
-3. **开发版 APK 携带 Cubism 官方示例资源**（约 28 MB 中的绝大部分），仅用于开发，发行前必须移除。
+3. **debug APK 约 6.3 MB**，已不含 Cubism 官方示例资源（移除 `:app → :core-live2d` 依赖的直接结果）。
 4. **客户角色资产与音色授权**均有边界：IP 角色不得作为可再分发 APK 的默认资源；
    未获授权不得克隆特定真人声纹。
 5. 诊断补丁已全部回滚，官方 Framework 与发行包逐字节一致（hash 已校验）。
