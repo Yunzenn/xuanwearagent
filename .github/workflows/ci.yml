@@ -34,9 +34,13 @@ jobs:
             git ls-files third_party/live2d
             exit 1
           fi
-          if [ -n "$(git ls-files app/src/main/assets/character)" ]; then
+          # The character directory deliberately keeps a tracked .gitignore: it commits the directory
+          # while ignoring its contents, so only other tracked files count as a violation. Without the
+          # filter this guard fires on its own placeholder, which is how the first CI run failed.
+          assets="$(git ls-files app/src/main/assets/character | grep -v '/\.gitignore$' || true)"
+          if [ -n "$assets" ]; then
             echo "::error::customer character assets are tracked:"
-            git ls-files app/src/main/assets/character
+            printf '%s\n' "$assets"
             exit 1
           fi
           echo "repo hygiene: no proprietary or customer assets tracked"
