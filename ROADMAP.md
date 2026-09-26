@@ -156,3 +156,58 @@ Adopted after a full session was spent on Live2D while it was the least product-
 
 > If two consecutive rounds fail to shrink the G1/G2 delivery gap, stop and re-evaluate rather than dig
 > deeper.
+
+
+## P0-2A — 真实语音闭环（当前工作流）
+
+**性质：产品化接通 + 真实端到端验证**，不是从零实现语音链路。
+
+`DebugAudioSession`（185 行）已经跑通
+`AudioRecord → PcmFrameAccumulator(960) → ConcentusOpusCodec → SessionCoordinator → ProtocolEvent →
+PlaybackQueue + AndroidPcmPlaybackSink`，并带 tx/rx/readChunks/discardedTailSamples/paddedFinalFrames
+等指标。**抽取，不重写。**
+
+冻结范围（不扩）：
+
+1. 把 `DebugAudioSession` 抽成产品可用的 `VoiceSessionAdapter`，复用现有 audio/protocol 代码。
+   **`DebugAudioSession` 保留为薄包装**——它背后是 `DebugSessionActivity`、10 分钟模拟器 soak 证据和
+   `core-audio` 的 codec 单测，删掉就等于扔掉唯一的 runtime 证据。
+2. `CompanionActivity` 的 PTT 绑定真实 `beginCapture / endCapture`。
+3. 协议 Conversation 状态映射到 UI 四态。协议侧已定义
+   `Idle / Listening / Thinking / Speaking`，打断路径 `Speaking → Interrupting → Listening`。
+4. STT 文本进用户气泡，TTS 文本进角色气泡。
+5. binary audio 继续走现有 `PlaybackQueue + AudioTrack`。
+6. Speaking 时再次按下走已有 `abort()`。"abort 先本地停止/flush/清空播放队列，再发送 abort"
+   **已是协议契约**（见 `PROTOCOL_CONTRACT.md`），所以这条是**验证**，不是新设计。
+7. 服务端沿用现有 Xiaozhi stack：**不引入 memory、不引入 Jev、不碰 Live2D**。
+8. 做一次真实 E2E，记录 `t_release → first_audio`。
+
+**唯一外部 blocker**：一个真实可访问的 `https://.../xiaozhi/ota/`（见 `PROTOCOL_CONTRACT.md`）。
+
+### ASR：只做选型与压测，不自己造
+
+服务端已有多 provider（`selected_module.ASR`，并已区分 `InterfaceType.STREAM`）。
+**第一轮只测 4 个，不做全量 sweep** —— 目标是实时陪伴，不是做 ASR 论文：
+
+```text
+A. FunASR              本地 baseline：零外部网络下的 final 延迟与准确率
+B. DoubaoStreamASRV2   明确流式：重点看首个 partial 与 final 延迟
+C. AliyunBLStreamASR   paraformer-realtime-v2，max_sentence_silence 可到 200ms，适合低延迟交互
+D. XunfeiStreamASR     另一个成熟中文流式基线
+```
+
+无云 API key 时退到 `FunASR + FunASRServer`，**不因选型阻塞产品**。
+
+20 句基准固定记录字段：
+
+```text
+utterance_id / duration_ms / t_audio_end / t_first_partial / t_final
+partial_latency_ms / final_latency_ms / expected_text / actual_text / CER / success / error
+```
+
+**真正决定 P0-2 的是端到端，不是单独的 ASR 分数**：
+
+```text
+PTT release → ASR final → LLM → TTS first packet → AudioTrack first audible sample
+重点看：t_release → t_first_audio
+```
