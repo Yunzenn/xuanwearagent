@@ -7,8 +7,37 @@
 
 ## 一句话定位
 
-> 要做的是**能长期记住这个用户、会自然说话、能被打断、有二次元角色感、真正陪伴她的腕上 AI**，
-> 不是 Live2D 展示器，也不是普通聊天机器人。
+> 一个以二次元角色呈现、拥有长期个人记忆，并能**像 Codex 操作电脑一样通过自然语言观察、理解和操作
+> 整块 Android 手表**的个人 AI Agent。
+
+内部称之为 **Companion Agent Runtime**／**腕上陪伴智能体**。
+
+不是"一个会聊天的二次元手表 App，后面顺便加一点设备控制"。三者缺一不可：
+
+```text
+陪伴 = 人格层
+记忆 = 持续性
+接管手表 = 行动能力
+```
+
+产品核心是**三个并列能力面**，由 Agent Planner 统一决定这一轮该不该调工具：
+
+```text
+                 小智 Agent
+                    │
+      ┌─────────────┼─────────────┐
+      ▼             ▼             ▼
+ Companion       Memory        Operator
+ 陪伴人格         长期记忆        手表控制
+```
+
+它更接近：
+
+```text
+Codex = 模型 + 上下文 + 工具 + 电脑执行器
+小智  = 角色人格 + 长期记忆 + 模型 + 工具 + 手表执行器
+```
+
 
 ---
 
@@ -259,7 +288,10 @@ P1+   Jev-Mem A/B
 
 **长期记忆在 P0，Live2D 在 P1。**
 
-### G3 Watch Operator —— 未来边界（已冻结）
+### G3 Watch Operator —— V1 核心能力之一（不是可选增强）
+
+`G1 / G2 / G3` **三者都属于最终 V1**。只有**工程顺序**是 G1 → G2 → G3，因为 Agent 连"听懂并正常对话"都还没稳定时，
+先让它乱点系统没有意义。**Live2D 才是 optional。**
 
 ```text
 G1 真语音闭环  →  G2 长期记忆生效  →  G3 Watch Operator
@@ -325,3 +357,131 @@ read_calendar / media play·pause / vibrate / （可选 brightness）
 - **G1**（不依赖 Live2D）：真机上打开 App → 看到角色 → 按住说话 → 听到回答 → 状态正确 → 重进仍在。
 - **G2**：记忆生效——隔天它能提起她之前说过的事。
 - **G3**：Live2D / Mahiro 形象。**永不阻塞 G1/G2。**
+
+
+---
+
+## 18. 三面能力架构与 Watch Operator（2026-09-26 产品定义更新）
+
+本节取代此前把 G3 描述为"未来边界"的措辞。**G1/G2/G3 都是 V1 核心**，Live2D 才是增强项。
+
+### 18.1 产品完成度
+
+```text
+核心 V1
+──────
+G1  Voice / Conversation     会自然交流
+G2  Long-term Memory         会长期记住
+G3  Watch Operator           会真正替用户操作手表
+
+增强
+────
+Live2D / 视觉 GUI fallback / 主动陪伴 / 更复杂自动化
+```
+
+工程顺序仍是 G1 → G2 → G3（`Phase A → B → C`），但 A+B+C 才是第一版产品，不是"A+B 做完再说"。
+
+### 18.2 Watch Operator Runtime 三层（优先级即顺序，不可颠倒）
+
+```text
+1. Native Tools        直接 Android API —— 永远优先
+2. Accessibility       通用 UI 操作（观察 → 决策 → 操作 → 再观察）
+3. Visual fallback     截图 → VLM → 坐标点击（后期，不带进第一版）
+```
+
+**有 API 就绝不模拟点击。** 用户说"声音太大了"→ `watch.set_volume(30)`，不是"打开设置→声音→拖滑块"。
+第一层最可靠、最省电、也最不容易坏，是第一版最重要的控制能力。
+
+第二层才是 Codex 式循环：`launch_app → inspect_ui → click → inspect_ui → set_text → …`
+
+### 18.3 工具必须分层披露，但核心集必须常驻
+
+不能每轮给模型 145 个 tool。默认只暴露**能力域**，模型判断属于某域后再展开：
+
+```text
+device / apps / calendar / media / communication
+```
+
+**但要注意一个延迟陷阱**：渐进披露会多一次往返（模型先要域、再拿工具、再调用）。语音路径的预算是
+`t_release → first_audio < ~1.2 s`，多一次 LLM 往返可能就吃掉了。
+
+因此：
+
+```text
+核心 6–10 个工具     每轮常驻，不付额外往返
+长尾工具             才走渐进披露
+```
+
+第一版核心集：
+
+```text
+set_volume / set_brightness / launch_app / create_timer
+create_alarm / read_calendar / media_play_pause / get_battery
+```
+
+### 18.4 记忆必须参与"操作"，这是与普通 Computer Use 最大的区别
+
+普通 Agent 只执行；小智要先**用记忆消解指代**再决定工具参数：
+
+```text
+"我明天下午别让我忘了那个事"
+   ↓ Memory Resolution
+EVENT: 交课程材料
+   ↓
+create_reminder(...)
+```
+
+**由此产生一条新的安全约束（本节新增）**：当工具参数是**由记忆消解指代**得出、且动作**不可撤销**时，
+必须在执行前把消解结果给用户确认。
+
+例如"那个事"被解析成"交课程材料"→ 创建提醒前先显示：
+
+```text
+你是说：交课程材料，明天
+对吗？
+```
+
+理由：错误的记忆消解在聊天里只是一句错话，落到工具调用上就是**一个真实且不可逆的世界动作**。
+这是 G2 与 G3 叠加后才出现的失败模式，单独的 G2 或 G3 都不需要这条。
+
+### 18.5 UI：极简 Agent Action Card
+
+首页不能只是聊天页，还要有"**Agent 正在替你做事情**"的感觉：
+
+```text
+小智
+"好呀，明天别睡过头。"
+
+✓ 已设置闹钟
+  明天 07:00
+```
+
+多步任务：
+
+```text
+正在帮你处理…
+✓ 打开设置
+✓ 找到声音
+● 调整媒体音量
+```
+
+**但只有 205 × 251 dp，不能做桌面 Codex 那种大块 terminal/log UI。**
+而且首页的固定预算（顶栏 38 + 舞台 84 + PTT 44 + 间距/边距 ≈ 188dp）只剩约 63dp 给消息区——
+action card 与对话区**抢同一块空间**。
+
+因此决定：**action card 不做独立面板，而是作为消息流里的附着元素**（紧跟触发它的那条回复），
+随消息一起滚动。这样不需要额外的垂直预算，也不会在只有一条消息时把页面撑空。
+
+### 18.6 架构定位
+
+```text
+手表端 = Thin Agent Client + Tool Runtime + Companion UI + Local Cache
+服务端 = ASR + LLM + Memory + Planning + TTS
+```
+
+**手表端不持有 LLM。** 这对 W527 + 4GB 是唯一合理的选择。
+
+### 18.7 命名
+
+文档与内部讨论改称 **Companion Agent Runtime**／**腕上陪伴智能体**。
+不改 `applicationId` 与包名——那是产品化步骤，不应在开发中途动。
