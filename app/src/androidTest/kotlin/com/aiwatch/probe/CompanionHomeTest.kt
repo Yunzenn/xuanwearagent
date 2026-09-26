@@ -13,7 +13,6 @@ import com.aiwatch.probe.conversation.MessageAuthor
 import com.aiwatch.probe.conversation.MessageBubbleView
 import com.aiwatch.probe.character.AvatarStageView
 import com.aiwatch.probe.home.CompanionActivity
-import com.aiwatch.probe.product.HomeActivity
 import com.aiwatch.probe.voice.PushToTalkView
 import com.aiwatch.probe.voice.toUiState
 import com.aiwatch.protocol.ConversationState as ProtocolConversation
@@ -173,20 +172,6 @@ class CompanionHomeTest {
                     .size >= 2)
         } finally {
             instrumentation.runOnMainSync { activity.finish() }
-            instrumentation.waitForIdleSync()
-        }
-    }
-
-    /** Criterion 8: the Phase 2A screen must remain independently startable for Live2D regression. */
-    @Test
-    fun phase2aHomeRemainsStartable() {
-        val intent = Intent(instrumentation.targetContext, HomeActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val home = instrumentation.startActivitySync(intent) as HomeActivity
-        try {
-            println("COMPANION_LEGACY_HOME launched=${home.javaClass.name} mode=${home.currentAvatarMode}")
-        } finally {
-            instrumentation.runOnMainSync { home.finish() }
             instrumentation.waitForIdleSync()
         }
     }

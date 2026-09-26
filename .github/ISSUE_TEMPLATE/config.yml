@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/Yunzenn/xuanwearagent/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue.
+  - name: Read the project memory first
+    url: https://github.com/Yunzenn/xuanwearagent/blob/main/PRODUCT_REQUIREMENTS.md
+    about: What this project is, what it is not, and the boundaries that are not up for debate.

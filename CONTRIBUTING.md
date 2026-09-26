@@ -56,18 +56,28 @@ machine uses; with network access the normal Gradle resolution works too.
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
 ```
 
-### Known limitation: a fresh clone cannot build `:app`
+### A fresh clone builds everything except the Live2D module
 
-`:app` depends on `:core-live2d`, which compiles against the **official Live2D Cubism SDK that we may not
-redistribute**. That SDK is gitignored. Until the dependency is made conditional, a clean checkout can
-only build and test the pure-Kotlin modules:
+The official Cubism SDK may not be redistributed, so `settings.gradle.kts` includes `:core-live2d` only
+when the SDK root is actually present. A clean checkout therefore configures and builds normally:
 
 ```bash
-./gradlew :core-protocol:test :core-audio:test
+./gradlew :core-protocol:test :core-audio:test :app:assembleDebug :app:assembleDebugAndroidTest
 ```
 
-If you are contributing to the protocol, audio or memory layers, that is enough. If your change needs
-`:app`, say so in the PR and a maintainer will build it.
+`:core-live2d` is absent from the project graph unless you drop `CubismSdkForJava-5-r.5` into
+`third_party/live2d/sdk-r5/`. This is an architectural boundary, not skipped coverage, and CI relies on
+it: the GitHub runner has no Cubism SDK and is not expected to.
+
+### Offline instrumentation note
+
+In this repository's current offline Gradle cache, a module with no other AndroidX dependencies failed
+to resolve the transitive `androidx.annotation:1.7.0-beta01` requested through the test runner
+dependencies. `core-live2d` explicitly pins `androidx.annotation:1.7.0` because that version is present
+in the verified offline cache.
+
+This is a fact about this repository's current offline cache and dependency graph, not a general Android
+rule. Do not generalise it, and do not remove the pin without re-running the offline build.
 
 ## Tests
 

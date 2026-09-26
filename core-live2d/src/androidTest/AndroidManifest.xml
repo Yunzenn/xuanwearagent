@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Live2D regression host.
+
+  This manifest belongs to the :core-live2d androidTest source set, so it is merged only into this
+  module's self-instrumenting test APK. Nothing here reaches the product APK, which is the whole point
+  of the module boundary: the product app has no Live2D Activity registration at all.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".Live2DRegressionActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+    </application>
+
+</manifest>

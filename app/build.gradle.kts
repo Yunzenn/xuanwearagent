@@ -38,5 +38,4 @@ dependencies {
     implementation(project(":core-protocol"))
     implementation(project(":core-audio"))
     // Live2D adapter: official Cubism framework as a Gradle module + local Core AAR. DEV-ONLY (P2B-1A).
-    implementation(project(":core-live2d"))
 }

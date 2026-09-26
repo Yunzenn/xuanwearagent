@@ -25,9 +25,5 @@
             </intent-filter>
         </activity>
 
-        <!-- Phase 2A / Live2D regression entry point. Intentionally still startable on its own. -->
-        <activity
-            android:name=".product.HomeActivity"
-            android:exported="true" />
     </application>
 </manifest>
