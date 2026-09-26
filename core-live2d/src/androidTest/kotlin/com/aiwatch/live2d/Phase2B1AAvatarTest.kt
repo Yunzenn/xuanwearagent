@@ -1,9 +1,7 @@
-package com.aiwatch.probe
+package com.aiwatch.live2d
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
@@ -13,18 +11,17 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.aiwatch.probe.product.HomeActivity
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * Phase 2B-1A acceptance: DEV-ONLY Home Live2D integration.
+ * DEV-ONLY Live2D regression suite (moved out of the product app).
  *
  * Completion is judged only by these five things, and every one of them is asserted here against a real
  * device rather than inferred from a successful compile or install:
- *   1. Home shows a legal Live2D model (verified by reading pixels back off the GL surface).
+ *   1. Regression host renders a legal Live2D model (verified by reading pixels back off the GL surface).
  *   2. Returning to the static avatar works.
  *   3. A Live2D initialisation failure falls back automatically.
  *   4. background/resume with surface recreation does not crash.
@@ -64,14 +61,14 @@ class Phase2B1AAvatarTest {
         harnessHost: Boolean = false,
         officialBackend: Boolean = false,
         plainShaderProbe: Boolean = false,
-    ): HomeActivity {
-        val intent = Intent(instrumentation.targetContext, HomeActivity::class.java)
+    ): Live2DRegressionActivity {
+        val intent = Intent(instrumentation.targetContext, Live2DRegressionActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (forceFailure) intent.putExtra(HomeActivity.EXTRA_FORCE_LIVE2D_FAILURE, true)
-        if (harnessHost) intent.putExtra(HomeActivity.EXTRA_HOST_MODE_HARNESS, true)
-        if (officialBackend) intent.putExtra(HomeActivity.EXTRA_RUNTIME_BACKEND_OFFICIAL, true)
-        if (plainShaderProbe) intent.putExtra(HomeActivity.EXTRA_PLAIN_SHADER_PROBE, true)
-        return instrumentation.startActivitySync(intent) as HomeActivity
+        if (forceFailure) intent.putExtra(Live2DRegressionActivity.EXTRA_FORCE_LIVE2D_FAILURE, true)
+        if (harnessHost) intent.putExtra(Live2DRegressionActivity.EXTRA_HOST_MODE_HARNESS, true)
+        if (officialBackend) intent.putExtra(Live2DRegressionActivity.EXTRA_RUNTIME_BACKEND_OFFICIAL, true)
+        if (plainShaderProbe) intent.putExtra(Live2DRegressionActivity.EXTRA_PLAIN_SHADER_PROBE, true)
+        return instrumentation.startActivitySync(intent) as Live2DRegressionActivity
     }
 
     /**
@@ -88,7 +85,7 @@ class Phase2B1AAvatarTest {
             assertTrue(
                 "runtime never became ready",
                 waitFor("runtime ready") {
-                    onMain { home.currentAvatarMode } == HomeActivity.AvatarMode.LIVE2D
+                    onMain { home.currentAvatarMode } == Live2DRegressionActivity.AvatarMode.LIVE2D
                 },
             )
             assertTrue(
@@ -164,7 +161,7 @@ class Phase2B1AAvatarTest {
         val home = launchHome(harnessHost = true, officialBackend = officialBackend)
         try {
             val ready = waitFor("$label runtime to report ready") {
-                onMain { home.currentAvatarMode } == HomeActivity.AvatarMode.LIVE2D
+                onMain { home.currentAvatarMode } == Live2DRegressionActivity.AvatarMode.LIVE2D
             }
             println("O1B side=$label ready=$ready failure=${onMain { home.currentLive2DFailure }}")
             assertTrue("$label side: runtime did not become ready", ready)
@@ -224,7 +221,7 @@ class Phase2B1AAvatarTest {
      * surface creation and the first drawn frame, and PixelCopy fails outright while the surface is still
      * settling, so a fixed sleep would be flaky in both directions.
      */
-    private fun captureAfterFrames(home: HomeActivity, attempts: Int = 8): Bitmap? {
+    private fun captureAfterFrames(home: Live2DRegressionActivity, attempts: Int = 8): Bitmap? {
         waitFor("Live2D to draw at least one frame") { onMain { home.live2DFramesDrawn } > 0 }
         repeat(attempts) { attempt ->
             val surface = live2dSurface(home) ?: return null
@@ -236,7 +233,7 @@ class Phase2B1AAvatarTest {
         return null
     }
 
-    private fun live2dSurface(home: HomeActivity): SurfaceView? =
+    private fun live2dSurface(home: Live2DRegressionActivity): SurfaceView? =
         flatten(home.window.decorView).filterIsInstance<SurfaceView>().firstOrNull()
 
     // --- criterion 5 -------------------------------------------------------------------------------
@@ -263,7 +260,7 @@ class Phase2B1AAvatarTest {
         val home = launchHome(forceFailure = false)
         try {
             val becameLive2D = waitFor("Home to report Live2D ready") {
-                onMain { home.currentAvatarMode } == HomeActivity.AvatarMode.LIVE2D
+                onMain { home.currentAvatarMode } == Live2DRegressionActivity.AvatarMode.LIVE2D
             }
             val failure = onMain { home.currentLive2DFailure }
             assertTrue("Home did not switch to the Live2D avatar (failure=$failure)", becameLive2D)
@@ -299,7 +296,7 @@ class Phase2B1AAvatarTest {
             Thread.sleep(500)
             instrumentation.runOnMainSync { instrumentation.callActivityOnResume(home) }
             val survived = waitFor("Live2D to be ready again after surface recreation") {
-                onMain { home.currentAvatarMode } == HomeActivity.AvatarMode.LIVE2D &&
+                onMain { home.currentAvatarMode } == Live2DRegressionActivity.AvatarMode.LIVE2D &&
                     onMain { home.live2DSurfaceGenerations } > generationBefore
             }
             println("SURFACE_RECREATION before=$generationBefore after=${onMain { home.live2DSurfaceGenerations }} " +
@@ -335,7 +332,7 @@ class Phase2B1AAvatarTest {
         val home = launchHome(harnessHost = true)
         try {
             val ready = waitFor("Live2D ready under HARNESS_LIKE host") {
-                onMain { home.currentAvatarMode } == HomeActivity.AvatarMode.LIVE2D
+                onMain { home.currentAvatarMode } == Live2DRegressionActivity.AvatarMode.LIVE2D
             }
             println("O1A mode=HARNESS_LIKE ready=$ready failure=${onMain { home.currentLive2DFailure }}")
             assertTrue("Live2D did not become ready under the HARNESS_LIKE host", ready)
@@ -360,7 +357,7 @@ class Phase2B1AAvatarTest {
         val home = launchHome(forceFailure = true)
         try {
             val fellBack = waitFor("Home to fall back to the static avatar") {
-                onMain { home.currentAvatarMode } == HomeActivity.AvatarMode.STATIC &&
+                onMain { home.currentAvatarMode } == Live2DRegressionActivity.AvatarMode.STATIC &&
                     onMain { home.currentLive2DFailure } != null
             }
             println("FALLBACK reason=${onMain { home.currentLive2DFailure }}")
@@ -376,13 +373,13 @@ class Phase2B1AAvatarTest {
             }
             assertNotNull("static avatar is not visible after fallback", visibleAvatar)
 
-            // Home must still be usable: the talk control is present and the shell did not crash.
-            val talk = onMain {
-                flatten(home.window.decorView).filterIsInstance<Button>()
-                    .firstOrNull { it.text.toString() == home.getString(R.string.product_talk) }
-            }
-            assertNotNull("Home lost its talk control after fallback", talk)
-            assertFalse("Home came up already connected", onMain { talk!!.isEnabled })
+            // Dropped during the :app -> :core-live2d migration, deliberately rather than adapted.
+            // It used to assert that the product shell's talk Button (R.string.product_talk) survived a
+            // Live2D fallback. That control belonged to product.HomeActivity, which this migration
+            // deletes, and the regression host carries no product UI by design. Keeping the assertion
+            // would mean re-importing the product shell into the test host.
+            // The fallback itself is still covered above: the static avatar is visible and no Live2D
+            // surface is left behind.
         } finally {
             instrumentation.runOnMainSync { home.finish() }
             instrumentation.waitForIdleSync()

@@ -5,9 +5,9 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
+import com.aiwatch.probe.home.CompanionActivity
 import com.aiwatch.probe.product.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -63,18 +63,27 @@ class ProductShellTest {
             assertTrue(root.listFiles()!!.none { it.name.startsWith("image-") })
         }
     }
-    @Test fun homeLaunchIsOfflineAndSettingsAndDiagnosticsRemainReachable() {
-        val home = instrumentation.startActivitySync(Intent(instrumentation.targetContext, HomeActivity::class.java)
+    /**
+     * What this test still owns after the Live2D migration: the companion Home's navigation into
+     * Settings, and the three technical entry points inside it.
+     *
+     * The old product-shell assertions (a disabled talk Button and an offline banner) were dropped
+     * rather than migrated. The companion Home has no such controls - push-to-talk is a drawn
+     * PushToTalkView and the settings entry is a drawn overflow control in CompanionTopBar - and
+     * CompanionHomeTest already covers the launcher, push-to-talk and the no-endpoint IDLE behaviour.
+     */
+    @Test fun companionHomeKeepsSettingsAndDiagnosticsReachable() {
+        val home = instrumentation.startActivitySync(Intent(instrumentation.targetContext, CompanionActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         instrumentation.waitForIdleSync()
         val monitor = instrumentation.addMonitor(SettingsActivity::class.java.name, null, false)
         try {
             instrumentation.runOnMainSync {
-                val views = flatten(home.window.decorView)
-                val talk = views.filterIsInstance<Button>().first { it.text.toString() == home.getString(R.string.product_talk) }
-                assertFalse(talk.isEnabled)
-                assertTrue(views.filterIsInstance<TextView>().any { it.text.toString() == home.getString(R.string.product_offline) })
-                views.filterIsInstance<Button>().first { it.text.toString() == home.getString(R.string.product_settings) }.performClick()
+                val settingsEntry = flatten(home.window.decorView).firstOrNull {
+                    it.contentDescription?.toString() == SETTINGS_CONTENT_DESCRIPTION
+                }
+                assertNotNull("companion Home exposes no settings affordance", settingsEntry)
+                settingsEntry!!.performClick()
             }
             val settings = instrumentation.waitForMonitorWithTimeout(monitor, 5000)
             assertNotNull(settings)
@@ -90,6 +99,11 @@ class ProductShellTest {
             instrumentation.runOnMainSync { home.finish() }
         }
     }
+    private companion object {
+        /** CompanionTopBar's overflow control carries this content description. */
+        const val SETTINGS_CONTENT_DESCRIPTION = "设置"
+    }
+
     private fun flatten(view: View): List<View> = listOf(view) +
         if (view is ViewGroup) (0 until view.childCount).flatMap { flatten(view.getChildAt(it)) } else emptyList()
 }

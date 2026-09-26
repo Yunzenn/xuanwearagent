@@ -60,8 +60,16 @@ kotlin {
 }
 
 dependencies {
-    // The official framework declares Core as compileOnly, so the consumer has to package it.
-    implementation(files(File(cubismSdk, "Core/android/Live2DCubismCore.aar")))
+    val coreAar = File(cubismSdk, "Core/android/Live2DCubismCore.aar")
+
+    // Mirrors Live2D's official CubismJavaFramework: compile against Core, but do not embed the
+    // proprietary Core in the AAR this module produces. AGP rejects a library AAR that has a direct
+    // local .aar file dependency, which is exactly the constraint upstream works within. The final
+    // application packages Core again (CubismJavaSamples does this at the application layer).
+    compileOnly(files(coreAar))
+
+    // Instrumentation runs as an APK, so the regression test APK carries Core itself at runtime.
+    androidTestImplementation(files(coreAar))
 
     // Reuse the exact versions the app module already resolves, both of which are in the local cache.
     // Deliberately NOT androidx.test:core / ActivityScenario: that artifact is not available offline and
