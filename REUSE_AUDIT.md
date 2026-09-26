@@ -12,7 +12,7 @@
 | Live2D | `Live2D/CubismJavaSamples@8ce6803de7030a4816bccd8a3efcad69ea1d1186`：`Sample/src/full/.../LAppDelegate.java`、`LAppLive2DManager.java`、`LAppModel.java` | lifecycle、model loading、render loop、motion | SDK / REFERENCE | Sample 受 Live2D Open Software License；Core 受 Proprietary Software License；商业发布可能需要 Release License；样例模型另受 Free Material/各模型条款。不得按 MIT/Apache 处理。 |
 | Native Live2D integration | `Voine/ChatWaifu_Mobile@14092ac66c2afd51de06bb126fd102cec869eb8e` | Android/Native Live2D 集成 | ADAPT（2026-09-25 更正，原判 REFERENCE ONLY 有误） | **MIT**，Copyright (c) 2023 weirdseed。原文照写「未发现 LICENSE」是错的：许可证文件名为英式拼写 `LICENCE`，`LICENSE` 才会 404。已直接抓取 `main/LICENCE` 全文（HTTP 200，1066 B，"MIT License / Copyright (c) 2023 weirdseed"）核实。MIT 只覆盖其自有代码；其 vendored `Live2D/src/SDKRoot/**` 仍受 Live2D 许可，内置 ATRI/Amadeus/Yuuka 模型属第三方 IP，不得沿用。 |
 | Product behavior | `TOM88812/xiaozhi-android-client@30a0c80446a3a88772945244739c0e69b79c647c` | Flutter Android/iOS 行为 | REFERENCE | Apache-2.0；不引入 Flutter runtime。 |
-| MCP | `stixez/droid-mcp@aeaa5b9e8e96f56ef64a7ca23d0726585f7b1103` | `DroidMcp` builder、`ToolRegistry`、device/settings/vibration/alarms/apps modules | P1 ADAPT | Apache-2.0；Phase 5 才按白名单选择模块，禁止 `addAll()`。 |
+| MCP | `stixez/droid-mcp@aeaa5b9e8e96f56ef64a7ca23d0726585f7b1103` | `DroidMcp` builder、`ToolRegistry`、device/settings/vibration/alarms/apps modules | **P1 ADAPT 已收紧为 REFERENCE / CANDIDATE（2026-09-26，见下方专条）** | Apache-2.0 与 minSdk 28 均已核实；但**每个 native tool 模块都依赖 `droid-mcp-core`**，而 core 直接依赖 Ktor Server + Netty + SSE，所以「模块可拆」只是 PARTIAL PASS。白名单选模块、禁止 `addAll()` 仍然成立，但**未做体积/Dex 实验前不得引入**。 |
 | Avatar import | Android SAF + `ZipInputStream` 或成熟 ZIP library | select → validate → copy → private storage | DIRECT PLATFORM REUSE | 默认复制进 app private storage，导入完成后不依赖原 URI。只自研 canonical path、数量、压缩/解压体积、嵌套深度等安全策略，不自研压缩引擎。 |
 
 ## Freeze rules
@@ -226,3 +226,50 @@ Reranking is conditional by hard rule, not by future optimisation — the voice 
 small talk / the current turn already carries the needed context   -> no rerank
 PROFILE or EVENT query, near-tied candidate scores, or cross-event association   -> Jev Recall
 ```
+
+## `stixez/droid-mcp` — device capability layer (2026-09-26)
+
+Candidate for the future **G3 Watch Operator**. Verified by the user directly against the repository
+(Gradle version catalog, module build files, LICENSE) — not from its README. This supersedes the one-line
+summary in the table above, which read as though the SDK were ready to adopt.
+
+```text
+LICENSE:
+VERIFIED Apache-2.0  (real Apache License 2.0 at the repository root)
+
+PLATFORM:
+VERIFIED minSdk 28   (gradle/libs.versions.toml) - aligns with CD12Max / Android 9
+
+MODULARITY:
+PARTIAL PASS
+  Individual capability modules are separable (not only an `all` artifact):
+  device / calendar / settings / apps / alarms / accessibility are separate Gradle modules.
+  But every inspected native tool module depends on droid-mcp-core.
+
+IMPORTANT COST:
+  droid-mcp-core directly depends on Ktor Server Core + Netty + SSE + ContentNegotiation +
+  kotlinx.serialization + coroutines + androidx.core. So even a handful of lightweight native tools
+  drags an HTTP/Netty server stack onto the compile classpath. The README calls the HTTP server
+  runtime-optional, but the Gradle dependency is not optional, and how much R8 removes cannot be
+  assumed - especially for the debug/test builds we currently run.
+  Shizuku/root are isolable: `droid-mcp-all` does not include them and requires explicit opt-in.
+
+STATUS:
+REFERENCE / CANDIDATE - NOT YET APPROVED FOR PRODUCT DEPENDENCY.
+```
+
+Not adopted. The accurate conclusion is not "droid-mcp can be dropped in" but "its tool implementations
+are very much worth reusing, while whether the SDK suits a watch APK must be measured first". Reuse-first,
+not dependency-first.
+
+Required spike before any decision, and only after G1/G2:
+
+```text
+measure  baseline APK -> + droid-mcp-core -> + 5 native modules:
+         APK size, Dex/method count, cold start, resident memory
+```
+
+Then choose between a real dependency and ADAPTing only the tool implementations.
+
+Still PENDING and only provable on hardware: the APK/Dex delta itself, CD12Max ROM behaviour
+(especially background survival), and whether the Accessibility module is usable on 糯米OS at all.
