@@ -31,7 +31,7 @@ class CompanionTopBar @JvmOverloads constructor(
 
     private val name = TextView(context).apply {
         setTextColor(CompanionColors.primaryText)
-        textSize = 15f
+        textSize = 13f
         letterSpacing = 0.04f
     }
 
@@ -39,7 +39,7 @@ class CompanionTopBar @JvmOverloads constructor(
 
     private val status = TextView(context).apply {
         setTextColor(CompanionColors.secondaryText)
-        textSize = 11f
+        textSize = 10f
     }
 
     private val settings = DotsButton(context).apply {
@@ -49,7 +49,7 @@ class CompanionTopBar @JvmOverloads constructor(
 
     init {
         val margin = CompanionDrawables.dp(context, CompanionDimensions.edgeMarginDp.toFloat()).toInt()
-        val dotSize = CompanionDrawables.dp(context, 7f).toInt()
+        val dotSize = CompanionDrawables.dp(context, 6f).toInt()
 
         val statusRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -81,7 +81,7 @@ class CompanionTopBar @JvmOverloads constructor(
             leftMargin = margin
         })
 
-        val buttonSize = CompanionDrawables.dp(context, 40f).toInt()
+        val buttonSize = CompanionDrawables.dp(context, 32f).toInt()
         addView(settings, LayoutParams(buttonSize, buttonSize).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             rightMargin = margin - CompanionDrawables.dp(context, 8f).toInt()

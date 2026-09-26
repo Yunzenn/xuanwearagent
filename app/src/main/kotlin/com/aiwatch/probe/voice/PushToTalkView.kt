@@ -45,8 +45,8 @@ class PushToTalkView @JvmOverloads constructor(
     }
 
     private val radius = CompanionDrawables.dp(context, CompanionDimensions.pttRadiusDp)
-    private val glyphWidth = CompanionDrawables.dp(context, 13f)
-    private val glyphGap = CompanionDrawables.dp(context, 9f)
+    private val glyphWidth = CompanionDrawables.dp(context, 12f)
+    private val glyphGap = CompanionDrawables.dp(context, 7f)
 
     private var pressed = false
     private var state = ConversationState.IDLE

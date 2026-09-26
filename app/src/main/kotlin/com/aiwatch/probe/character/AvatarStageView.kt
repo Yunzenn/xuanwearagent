@@ -44,7 +44,7 @@ class AvatarStageView @JvmOverloads constructor(
     private val placeholderLabel = TextView(context).apply {
         gravity = Gravity.CENTER
         setTextColor(CompanionColors.secondaryText)
-        textSize = 15f
+        textSize = 13f
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
         letterSpacing = 0.12f
     }
