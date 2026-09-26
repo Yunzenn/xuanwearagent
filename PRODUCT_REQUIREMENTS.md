@@ -356,7 +356,11 @@ read_calendar / media play·pause / vibrate / （可选 brightness）
 
 - **G1**（不依赖 Live2D）：真机上打开 App → 看到角色 → 按住说话 → 听到回答 → 状态正确 → 重进仍在。
 - **G2**：记忆生效——隔天它能提起她之前说过的事。
-- **G3**：Live2D / Mahiro 形象。**永不阻塞 G1/G2。**
+- **G3**：Watch Operator——通过自然语言真正操作手表。**V1 核心，不是增强项。**
+- **Visual Enhancement Gate**（不占 G 编号）：Live2D / Mahiro 形象。**永不阻塞 G1/G2/G3。**
+
+> 2026-09-26 修正：本节此前把 G3 写成"Live2D / Mahiro 形象"，与第 18 节冲突。**G3 = Watch Operator**，
+> Live2D 降为独立的 Visual Enhancement Gate。以本节 + 第 18 节为准。
 
 
 ---

@@ -211,3 +211,47 @@ partial_latency_ms / final_latency_ms / expected_text / actual_text / CER / succ
 PTT release → ASR final → LLM → TTS first packet → AudioTrack first audible sample
 重点看：t_release → t_first_audio
 ```
+
+## 产品版本线（2026-09-26 冻结）
+
+不再用"P0 做一大坨"管理。每个版本必须**真的能演示、真的能验收**，而不是"完成了若干模块"。
+G1/G2/G3 **都属于 V1**；Live2D 是增强，不占 Gate 编号。
+
+| 版本 | 名称 | 用户能得到什么 | 前置 | 主要验收 |
+|---|---|---|---|---|
+| v0.1 | Companion Shell | 打开看到角色 / 最近消息 / PTT / 四态 / 设置 | — | ✅ 410×502@320dpi 无溢出；三测试通过 |
+| v0.2 | Voice Core | 软件内部真正跑通 Session 状态、气泡、埋点、打断 | 无 | Contract Harness 驱动 `LISTENING→THINKING→SPEAKING→IDLE`；STT/TTS 气泡、latency、barge-in 全部执行 |
+| v0.3 | Connected Voice | 真能"按住说话 → 听到回复" | **endpoint** | `PTT→ASR→LLM→TTS→AudioTrack`；`t_release→first_audio` ≈ <1.2 s |
+| v0.4 | Memory Companion | 小智记得住，第二次聊天会主动用过去信息 | 无手表 | CanonicalMemory、画像/事件/经历/关系、Memory Gateway、"我的记忆"可编辑删除 |
+| v0.5 | Memory Beta | 记忆从"能存"到"会用" | 无手表 | 候选检索、时间衰减、去重、**条件式** Jev rerank、隔天回忆测试 |
+| v0.6 | Native Watch Agent | 真正操作 Android：音量/亮度/闹钟/计时器/日历/App 启动/媒体 | **v0.3** | 5–8 个 typed native tools；Action Card；确认策略；审计日志 |
+| v0.7 | Integrated Companion Agent | 陪伴+记忆+操作合进同一个 Agent Planner | v0.5, v0.6 | "那个事"→记忆消解→确认→创建提醒；对话与工具调用共用上下文 |
+| v0.8 | CD12Max Hardware Beta | 真正适配目标手表 | **手表** | 麦克风/扬声器/网络/续航/后台/ABI/GL texture/ROM 权限全部实测 |
+| v0.9 | UI Operator Beta | 尝试 Codex 式操作第三方 App UI | **真机 Accessibility** | `launch_app→inspect_ui→click/set_text→observe`；糯米OS 不可靠则明确降级 |
+| v1.0 | First Product Release | 可交付的腕上陪伴智能体 | 以上 | G1+G2+G3 核心达标；**Live2D 不阻塞** |
+
+### 没有手表也能连续推进
+
+```text
+v0.2 → (v0.3 若有 endpoint) → v0.4 → v0.5 → v0.6 → v0.7
+```
+
+v0.6 的 native tools 可先在 **API 28 模拟器或普通 Android 手机**验证，因为 `AudioManager`、
+Alarm/Calendar、Intent/App launch、MediaSession 都是标准 API。CD12Max 到手时做的不是"第一次开发"，
+而是**验证糯米OS 把这些标准能力允许到什么程度**。
+
+**必须等手表的只有**：真实麦克风/扬声器、后台保活、`AccessibilityService` 可否启用且稳定、
+厂商 App 的 UI tree 质量、`ro.product.cpu.abilist`、`GL_MAX_TEXTURE_SIZE`、真实电池与发热。
+
+### v1.0 必需 / 非必需（写死，防止再次跑偏）
+
+```text
+必需：  Voice · Memory · Native Watch Operator · Agent Planner · 确认/权限/审计 · 角色 UI
+非必需：Live2D · 视觉 GUI Agent · 复杂自动化 · 多角色商城
+```
+
+### Accessibility 单独成 v0.9
+
+**v0.6 的"会操作手表"不依赖 Accessibility 才成立。** 先用 native tools 交付明确可感的 Agent 行为
+（"声音小一点""十分钟后提醒我""打开网易云""暂停音乐""今天有什么安排"），v0.9 才挑战
+"打开微信找到某个人"。Operator 分层顺序是硬约束：`Native API → Accessibility → Visual fallback`。
