@@ -27,6 +27,10 @@ android {
 
     defaultConfig {
         minSdk = 28
+        // This module owns its own Live2D regression instrumentation, so it needs a runner of its own.
+        // A library module with androidTest produces a self-instrumenting test APK, which is what keeps
+        // the Live2D regression host out of the product app entirely.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     sourceSets {
@@ -58,6 +62,16 @@ kotlin {
 dependencies {
     // The official framework declares Core as compileOnly, so the consumer has to package it.
     implementation(files(File(cubismSdk, "Core/android/Live2DCubismCore.aar")))
+
+    // Reuse the exact versions the app module already resolves, both of which are in the local cache.
+    // Deliberately NOT androidx.test:core / ActivityScenario: that artifact is not available offline and
+    // this migration must not introduce a testing dependency just to move a host Activity.
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("junit:junit:4.13.2")
+    // Offline constraint: androidx.test:runner:1.6.2 transitively requests androidx.annotation
+    // 1.7.0-beta01, which is not in the local cache. 1.7.0 is, and outranks the beta, so pin it
+    // explicitly instead of letting the build depend on network resolution.
+    androidTestImplementation("androidx.annotation:annotation:1.7.0")
 }
 
 // Shader assertion layer 1 (build-time input): the framework's runtime-loaded shaders must all be
