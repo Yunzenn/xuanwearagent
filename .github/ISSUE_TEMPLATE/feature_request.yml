@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose a capability or a change in direction.
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is the user unable to do today? Describe the user, not the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: reuse
+    attributes:
+      label: Existing implementation / reuse candidates
+      description: |
+        This project is reuse-first: a new subsystem may not be designed or written before checking what
+        already exists. List the similar projects, official SDKs or samples you looked at on GitHub, and
+        your verdict for each:
+
+          DIRECT    - take it as a dependency
+          ADAPT     - take a module or implementation, adapted
+          REFERENCE - take the design only, no code
+          REJECT    - unsuitable, say why (licence, minSdk, platform, size, security)
+
+        If you found nothing suitable, say what you searched and why the existing options do not fit.
+        "Nothing exists" without a search is not an answer.
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Boundary check
+      description: |
+        Which of the frozen boundaries does this touch, if any? (no Compose or Wear runtime, no on-device
+        ASR/LLM/TTS, no shell for the model, no licensed assets, no new UI stack.) Explain why it does not
+        cross them, or argue for changing one explicitly.
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Which version line item does this serve
+      options:
+        - v0.2 Voice Core
+        - v0.3 Connected Voice
+        - v0.4 Memory Companion
+        - v0.5 Memory Beta
+        - v0.6 Native Watch Agent
+        - v0.7 Integrated Companion Agent
+        - v0.8 / v0.9 Hardware and UI Operator
+        - Visual Enhancement Gate (Live2D and friends)
+        - Not on the roadmap — new direction
+    validations:
+      required: true
