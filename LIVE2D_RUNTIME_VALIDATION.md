@@ -1,6 +1,10 @@
 # P2B-RUNTIME validation
 
-状态：**PASS WITH OBSERVATIONS（限定范围：x86_64 / 4 KB 页 / API 28 模拟器）**。逐特性归因除 **pose = N/A BY ASSET** 外全部实测通过。观察项：软件 GL 下间歇 `GL_INVALID_VALUE (0x501)`（已裁定为 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSERVATION`，ARM64 上不得沿用该解释，三分支裁定见 `HANDOFF.md`）。ARM64 真实手表行仍 NOT RUN；**P2B-0 整体 NOT PASS，下一硬 Gate 即 ARM64 参考手机**（唯一阻塞是外部条件"没有手机"）；ARM64 16 KB RELRO 静态 FAIL 仍是独立 Release Gate。
+状态：**PASS WITH OBSERVATIONS（限定范围：x86_64 / 4 KB 页 / API 28 模拟器）**。逐特性归因除 **pose = N/A BY ASSET** 外全部实测通过。观察项：软件 GL 下间歇 `GL_INVALID_VALUE (0x501)`（已裁定为 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSERVATION`，ARM64 上不得沿用该解释，三分支裁定见 `HANDOFF.md`）。
+
+**Gate 已按用户第二轮裁定调整**：P2B-0 overall = **PASS FOR DEV ONLY**；ARM64 与 CD12Max 转为后续 Target Gate（`DEFERRED / NO HARDWARE`、`TARGET PENDING`），不再是进入开发阶段的硬前置；ARM64 16 KB RELRO 静态 FAIL 仍是独立 Release Gate。**但不得表述为「ARM64 已验证」或「目标设备已兼容」。**
+
+**16 KB 交叉验证**：API35 / 16 KB x86_64 AVD 已建成，`getconf PAGE_SIZE` 实测 **16384**；APK 安装成功、`libLive2DCubismCoreJNI.so` 装载成功、EGL/GLES 初始化成功、无本 app native 崩溃；但软件 GL 单帧最长 25.5 s 导致 harness 20 s `queueEvent` 超时，**行为级 16 KB 证据未取得** → `X86_64_16K_RUNTIME / ENVIRONMENT PENDING`（不得记为 PASS 或 FAIL）。完整记录见 `evidence/reports/x86_64-16k-page-size.txt`。
 
 本轮把「没有 GL 报错」升级为像素级、参数级、并进一步升级为**逐特性可归因**的证据：模型必须真的画出来、画面必须真的在变、参数必须真的被驱动，而且**每个特性的驱动者必须由关闭对照实验证明**。证书见 `evidence/reports/cubism-runtime-smoke.txt` 与 `evidence/reports/cubism-feature-attribution.txt`，可复现脚本 `evidence/tests/run_cubism_smoke.ps1`。
 

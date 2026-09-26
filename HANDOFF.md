@@ -1,33 +1,62 @@
 # Handoff — Live2D Runtime Gate
 
-## 冻结裁决（用户 2026-09-25 裁定，以此为当前状态权威）
+## 冻结裁决（用户 2026-09-25 裁定，以此为当前状态权威；第二轮已调整 Gate）
+
+用户第二轮裁定：**不再把「必须有 ARM64 真机」作为进入开发阶段的硬前置**，否则项目会被一个当前拿不到的外部资源无限卡住。
 
 ```
-x86_64 Runtime Gate          PASS WITH OBSERVATIONS    证据提交 d76dd77，已冻结
-P2B-0 overall                NOT PASS                  下一硬 Gate = ARM64 参考手机
-ARM64 runtime                PENDING                   ← 唯一阻塞项是"没有手机"这一外部条件
-CD12Max                      TARGET PENDING
-ARM64 16KB                   RELEASE BLOCKER / UPSTREAM
-DEBUG-ONLY P2B-1             NOT AUTHORIZED            手机通过前不得把 Live2D 搬进 Home
+P2B-0
+├ x86_64 API28 Runtime              PASS WITH OBSERVATIONS   证据提交 d76dd77，已冻结
+├ Cubism feature attribution        PASS
+├ lifecycle / GL recreation         PASS
+├ Core binary audit                 PASS WITH CONDITIONS
+├ x86_64 API35 16 KB runtime        ENVIRONMENT PENDING      见 evidence/reports/x86_64-16k-page-size.txt
+├ ARM64 runtime                     DEFERRED / NO HARDWARE   ← 不再是开发阶段硬前置
+├ CD12Max                           TARGET PENDING
+├ ARM64 16KB                        RELEASE BLOCKER / UPSTREAM
+└ overall                           PASS FOR DEV ONLY
+
+DEV-ONLY P2B-1                      AUTHORIZED (2026-09-25 第二轮裁定)
 ```
 
-**下一动作是"停"，不是"继续做 x86"**。等一台普通 ARM64 4 KB Android 手机接入后，只执行现成命令，
-**不得临时重写 harness**：
+**禁止的表述**：不得把当前状态写成「ARM64 已验证」或「目标设备已兼容」。ARM64/CD12Max 仍是后续 Target Gate，拿到硬件时补证据。
 
-```powershell
-D:\AIwatch\evidence\tests\run_cubism_smoke.ps1 -Serial <serial>
+### P2B-1 授权范围（严格照此执行）
+
+允许：把**已经验证过的** Runtime 结构接入产品，且只做最小一步。
+
+```
+Home
+ ↓
+AvatarView / Live2D container
+ ↓
+CubismRuntimeOwner
+ ↓
+Framework module
+ ↓
+local Core AAR
 ```
 
-重点取证：Core native load/`getVersion`、双模型、pixel output、expression、physics、
-GL surface recreation、background/resume、clean release、**以及 GL error 日志**。
-不要求把 x86 的四轮 attribution 在 ARM64 完整复制一遍。
+同时做：`static avatar ↔ Live2D avatar` 切换、model lifecycle、shader packaging assertion、
+background/resume、surface recreation、clean release。
 
-手机通过后的推进路径：`P2B-0 Runtime Gate → PASS FOR DEV`（ARM64_16K 与 CD12Max 仍各自独立挂起），
-**之后才**授权 `DEV-ONLY P2B-1`。
+P2B-1 第一小步的完成判据：**Home 能稳定显示一个合法 Live2D 模型，且静态 Avatar 能正常 fallback。**
+
+**暂时不做**：ZIP importer、三层高级配置 UI、Emotion mapping、LipSync、Voice/personality。
+先完成最小闭环，不要并行铺开。
+
+### 16 KB 实验结论（本轮已执行）
+
+API35 / 16 KB x86_64 AVD 已建成并启动，`getconf PAGE_SIZE` 实测 **16384**。APK 安装成功、
+`libLive2DCubismCoreJNI.so` **装载成功**（`nativeloader ... : ok`）、EGL/GLES 初始化成功，
+且未观察到属于本 app 的 native 崩溃。但模拟器软件 GL 单帧最长 **25.5 s**
+（`EGL_emulation app_time_stats max=25523.69ms`），harness 的 `queueEvent` 20 s 上限必然超时，
+**行为级 16 KB 证据未取得**。因此不得记为 16 KB PASS 或 FAIL，按 `ENVIRONMENT PENDING` 处理，
+且**不因此卡住 P2B-1 DEV**。完整记录见 `evidence/reports/x86_64-16k-page-size.txt`。
 
 ### 冻结边界 1：ARM64 上若出现同一 `GL_INVALID_VALUE`，不得沿用"模拟器驱动怪癖"解释
 
-x86 软件 GL 上的偶发 `0x501` 已按 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSERVATION` 处理，允许不阻塞 ARM64 取证，
+x86 软件 GL 上的偶发 `0x501` 已按 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSERVATION` 处理，允许不阻塞取证，
 但**不得永久忽略**。ARM64 上按此三分支裁定：
 
 | ARM64 观察 | 裁定 |
@@ -35,6 +64,16 @@ x86 软件 GL 上的偶发 `0x501` 已按 `SOFTWARE_GL_INTERMITTENT_0x501 / OBSE
 | 无 GL error | 该风险可基本降为 emulator-specific observation |
 | 出现 `0x501`，但无视觉/生命周期异常 | 继续调查，**P2B-0 暂不完全 PASS** |
 | `0x501` 关联黑帧 / 缺 mask / 崩溃 / 恢复失败 | **BLOCKER** |
+
+### 后续 Target Gate（拿到硬件时执行，不阻塞开发）
+
+```powershell
+D:\AIwatch\evidence\tests\run_cubism_smoke.ps1 -Serial <serial>
+```
+
+**不得临时重写 harness。** 重点取证：Core native load/`getVersion`、双模型、pixel output、expression、
+physics、GL surface recreation、background/resume、clean release、**以及 GL error 日志**。
+不要求把 x86 的四轮 attribution 在 ARM64 完整复制一遍。
 
 ### 冻结边界 2：产品禁止照搬官方 Sample 的 Activity 单例
 

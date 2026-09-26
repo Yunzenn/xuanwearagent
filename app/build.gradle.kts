@@ -12,8 +12,8 @@ android {
         applicationId = "com.aiwatch.probe"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.0.1-phase0b"
+        versionCode = 2
+        versionName = "0.2.0-product-preview"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -37,4 +37,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation(project(":core-protocol"))
     implementation(project(":core-audio"))
+    // Live2D adapter: official Cubism framework as a Gradle module + local Core AAR. DEV-ONLY (P2B-1A).
+    implementation(project(":core-live2d"))
 }

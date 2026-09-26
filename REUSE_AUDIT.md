@@ -180,3 +180,22 @@ MIT 属实，但**不是可用代码供体**：全仓库仅 65 个文件、**4 �
 5. 把 `docs/websocket.md` 作为协议测试 oracle（若 vendor 需署名）。
 6. 不要采纳 `weijia/android-zhi` 的 `minSdk 24` / AGP 8.8.0 / Compose BOM，也不要复制它的安慰剂开关反模式。
 7. MIT 义务：`android-zhi` 为 `Copyright (c) 2025 Android-Zhi Contributors`；`xiaozhi-esp32-ble` 为 `Copyright (c) 2025 Shenzhen Xinzhi Future Technology Co., Ltd.` 与 `Copyright (c) 2025 Project Contributors`，且其协议/OTA/音频核心同步自上游 `78/xiaozhi-esp32`，需一并署名。
+
+
+## Companion-UI references (2026-09-26)
+
+Candidates reviewed for the P0-1 product shell. **The licences below are as reported by the user during
+review and have NOT been independently verified against each repository's LICENSE file** — web search and
+fetch were unavailable in this session. No code may be reused until that verification lands.
+
+| Repository | Reported licence | Intended use | Must NOT copy |
+|---|---|---|---|
+| `DevEmperor/WristAssist` | Apache-2.0 (unverified) | wrist interaction and UI patterns; standalone watch manifest; RECORD_AUDIO usage | its hard dependency on `com.google.android.wearable` — it is Wear-OS-bound and is not a base for CD12Max |
+| `dudu-Dev0/WearGPT` | MIT (unverified) | plain-Android small-screen page shell (new chat / history / settings / about) | Gradle files embed signing credentials |
+| `Namakamoto/WearGPT` | Apache-2.0 (unverified) | speak -> answer -> TTS interaction on a watch | Wear OS specifics |
+| `crackedpotato007/ChatGPT-WearOS` | unverified | page organisation | — |
+| `SayccBr/WearOS_Android_Bidirectional_Chat` | unverified | technical reference only | not a product base |
+
+Decision: build the Xiaozhi shell ourselves on `core-audio` + `core-protocol` + the Phase 2A Home, taking
+**patterns only** — no code, no architecture. CD12Max is Full Android rather than Wear OS, so
+Wear-OS-bound bases are excluded by construction, not by preference.

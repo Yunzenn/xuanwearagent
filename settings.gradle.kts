@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "AIWatchProbe"
 include(":app", ":core-protocol", ":core-audio")
+include(":core-live2d")

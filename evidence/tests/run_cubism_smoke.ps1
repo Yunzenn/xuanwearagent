@@ -106,10 +106,20 @@ $sdk = (& $adb -s $Serial shell getprop ro.build.version.sdk 2>&1 | Out-String).
 $model = (& $adb -s $Serial shell getprop ro.product.model 2>&1 | Out-String).Trim()
 Write-Step "device abi=$abi sdk=$sdk model=$model"
 
-# Page size must be measured, never assumed: it decides whether a 16 KB result is even relevant.
+# Page size must be measured, never assumed. Two different numbers exist and they mean different things:
+#   * getconf PAGE_SIZE    -> the page size the loader / ELF alignment requirements use. THIS is what
+#     "16 KB page size" refers to and what the Android 16 KB compatibility requirement is about.
+#   * smaps KernelPageSize -> the kernel's base page size. On an x86_64 16 KB AVD this still reads 4 kB,
+#     because 16 KB mode is emulated for compatibility testing, so reporting it as "the page size" is
+#     wrong and misleading. Prefer getconf; keep smaps only as a clearly labelled fallback.
 Write-Step "--- page size (measured, not assumed) ---"
-(& $adb -s $Serial shell cat /proc/self/smaps 2>&1 | Select-String 'KernelPageSize' | Select-Object -First 1) |
-    ForEach-Object { Write-Step $_ }
+$pageSize = (& $adb -s $Serial shell getconf PAGE_SIZE 2>&1 | Out-String).Trim()
+if ($pageSize -match '^\d+$') {
+    Write-Step "pageSize=$pageSize source=getconf (userspace/ELF page size - this is the 16 KB gate metric)"
+} else {
+    $kernel = (& $adb -s $Serial shell cat /proc/self/smaps 2>&1 | Select-String 'KernelPageSize' | Select-Object -First 1) -replace '\s+', ' '
+    Write-Step "pageSize source=smaps kernel=$kernel (getconf unavailable: $pageSize) - kernel base page, NOT the ELF gate metric"
+}
 
 # ---------- install ----------
 Write-Step "--- install ---"

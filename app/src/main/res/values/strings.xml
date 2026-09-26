@@ -15,7 +15,7 @@
     <string name="identity">Identity</string>
     <string name="identity_value">Device ID: %1$s\nClient ID: %2$s</string>
     <string name="identity_unavailable">Identity storage unavailable; identity was not reset.</string>
-    <string name="app_name">AIWatch Phase 0 Probe</string>
+    <string name="app_name">小星陪伴 · 预览</string>
     <string name="tab_device">Device</string>
     <string name="tab_audio">Audio</string>
     <string name="tab_graphics">Graphics</string>

@@ -8,11 +8,17 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.ConcurrentHashMap
 import okhttp3.OkHttpClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+data class SessionCaption(val text: String = "", val fromUser: Boolean = false)
 
 /** Foreground debug session only. UI owns start/stop intent; coordinator owns protocol state. */
 class DebugAudioSession(private val application: ProbeApplication, endpoint: String,
     client: OkHttpClient = OkHttpClient()) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mutableCaption = MutableStateFlow(SessionCaption())
+    val caption = mutableCaption.asStateFlow()
     private val transport = WebSocketTransport(client)
     private val audioLock = Any()
     @Volatile private var playback: PlaybackQueue? = null
@@ -114,6 +120,7 @@ class DebugAudioSession(private val application: ProbeApplication, endpoint: Str
     fun interrupt() { stopTalking(); scope.launch { coordinator.abort() } }
 
     private fun flush() {
+        mutableCaption.value = SessionCaption()
         // beginCapture also flushes previous playback: do not stop the newly starting capture here.
         synchronized(audioLock) { playback?.flush() }
     }
@@ -144,10 +151,14 @@ class DebugAudioSession(private val application: ProbeApplication, endpoint: Str
                     }
                 }
             }
-            is ProtocolEvent.Tts -> when (event.phase) {
-                ProtocolEvent.Tts.Phase.START -> playback?.begin(generation)
-                ProtocolEvent.Tts.Phase.STOP -> playback?.end(generation)
-                else -> Unit
+            is ProtocolEvent.Stt -> mutableCaption.value = SessionCaption(event.text.take(2000), true)
+            is ProtocolEvent.Tts -> {
+                event.text?.takeIf { it.isNotBlank() }?.let { mutableCaption.value = SessionCaption(it.take(2000)) }
+                when (event.phase) {
+                    ProtocolEvent.Tts.Phase.START -> playback?.begin(generation)
+                    ProtocolEvent.Tts.Phase.STOP -> playback?.end(generation)
+                    else -> Unit
+                }
             }
             is ProtocolEvent.BinaryAudio -> {
                 check(playback?.offer(event.bytes, generation) == true) { "Playback backpressure or stale generation" }
