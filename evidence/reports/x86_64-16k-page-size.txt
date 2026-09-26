@@ -1,0 +1,121 @@
+# X86_64_16K_RUNTIME — Android 15 (API 35) / 16 KB page size experiment
+
+裁定：**ENVIRONMENT PENDING**（行为级 16 KB 验证未取得；但取得了两项真实正向结果，见下）
+
+本轮目标（用户指定）：建立 API35 / 16 KB page-size 的 x86_64 AVD，确认 `PAGE_SIZE == 16384`，
+然后用**现成的** `run_cubism_smoke.ps1` 跑 smoke，不新增 attribution 实验。
+
+## 结论摘要
+
+| 项 | 结果 |
+|---|---|
+| 16 KB 镜像获取与安装 | **PASS** |
+| 16 KB AVD 创建与启动 | **PASS** |
+| `getconf PAGE_SIZE` | **16384**（确认） |
+| APK 安装到 16 KB 设备 | **PASS**（两个 APK 均 Success） |
+| `targetSdk` 是否避免 4 KB 兼容模式 | **35 → 是**，未走兼容模式 |
+| x86_64 Core native 库装载 | **PASS** — `nativeloader: Load ...libLive2DCubismCoreJNI.so ... : ok` |
+| EGL / GLES 初始化 | **PASS** — `EGL_emulation: Opening libGLESv1_CM_emulation.so` / `libGLESv2_emulation.so` |
+| 渲染 / 生命周期 / 双模型行为验证 | **NOT OBTAINED** — 环境过慢，阻塞 |
+| 是否存在 native 崩溃 / 16 KB 拒绝 | **未观察到** |
+
+**因此：不能声称 16 KB runtime PASS，也不能声称 FAIL。** 已确认的是「16 KB 下可安装、可装载 Core .so、
+可初始化 EGL」；未确认的是任何渲染行为。
+
+## 镜像与环境（实测）
+
+- 包：`system-images;android-35;google_apis_playstore_ps16k;x86_64`，rev 5
+- 归档：`x86_64-playstore-ps16k-35_r05.zip`，**1,510,397,655 B**，与仓库 manifest 的 `<size>` 精确一致
+- 下载方式：本沙箱 `curl.exe`/schannel 不可用（连接 000），改用 Node `https` 流式下载；解压 45.2 s
+- 解压到：`.android-sdk/system-images/android-35/google_apis_playstore_ps16k/x86_64/`
+- `source.properties` 关键行：
+  ```
+  Pkg.Desc=System Image Page Size 16k x86_64 with Google APIs.
+  SystemImage.TagId=google_apis,page_size_16kb
+  SystemImage.TagDisplay=Google APIs,16 KB Page Size
+  Pkg.Dependencies=emulator#33.1.24
+  AndroidVersion.ApiLevel=35
+  ```
+  本机 emulator 37.1.11.0 ≥ 要求的 33.1.24。
+- AVD：`aiwatch-api35-16k`（320×640 / 160dpi / 2048M / swiftshader，`-no-window -no-audio -no-boot-anim -no-snapshot`）
+- 设备：`emulator-5558`，`model=sdk_gphone16k_x86_64`，`abi=x86_64`，`sdk=35`，`release=15`
+
+### 页大小的两个数字（必须区分）
+
+| 指标 | 值 | 含义 |
+|---|---|---|
+| `getconf PAGE_SIZE` | **16384** | 用户态 / ELF 段对齐所依据的页大小。**这才是「16 KB page size」与 Android 16 KB 兼容性要求所指的指标** |
+| `/proc/self/smaps` `KernelPageSize` | 4 kB | 内核基页。x86_64 的 16 KB 模式是为兼容性测试模拟的，所以内核基页仍是 4 KB |
+
+**由此修正了 harness 的一个真实缺陷**：`run_cubism_smoke.ps1` 原先只读 `smaps KernelPageSize`，
+在 16 KB AVD 上会误报 `4 kB`。已改为**优先 `getconf PAGE_SIZE`**、仅在不可用时回退 smaps 并明确标注来源。
+
+## 被测 APK
+
+`CubismRuntimeSmoke-debug.apk`，27242596 B，SHA256 `710BCF176A9DD330C268B1222FBA5D1CBE17557DA646212EC464B1A2FCF1B241`
+（与 API28 AVD 上通过的 APK **完全相同**）
+
+`aapt2 dump badging` 关键行：
+
+```
+package: ... compileSdkVersion='35'
+minSdkVersion:'28'
+targetSdkVersion:'35'
+native-code: 'x86_64'
+```
+
+`targetSdkVersion=35` 很重要：若 <35，Android 15 会为该应用启用 page-size 兼容模式（按 4 KB 装载），
+本次实验就失去意义。实测为 35，因此运行在原生 16 KB 模式下。
+
+包内 native 库：`lib/x86_64/libLive2DCubismCoreJNI.so`（116992 B）。
+
+## 正向证据（已取得）
+
+1. **安装成功**。Android 15 的 16 KB 设备会拒绝页对齐不合格的 APK，本 APK 两个包均 `Success`。
+2. **native 库装载成功**：
+   ```
+   D nativeloader: Load /data/app/~~.../com.aiwatch.cubism.smoke-.../base.apk!/lib/x86_64/libLive2DCubismCoreJNI.so
+     using ns clns-7 from class loader (caller=.../base.apk): ok
+   ```
+   无 `UnsatisfiedLinkError`、无 `dlopen failed`、无 16 KB 相关拒绝。
+3. **EGL / GLES 初始化成功**：`EGL_emulation: Opening libGLESv1_CM_emulation.so` / `libGLESv2_emulation.so`。
+4. **Activity 确实 resume**：运行中 `dumpsys activity activities` 显示
+   `topResumedActivity=...com.live2d.demo.full.MainActivity`（因此不是「Activity 起不来」）。
+5. **未观察到 native 崩溃**：logcat 无属于本 app 的 `Fatal signal` / `SIGSEGV` / tombstone；
+   `/data/tombstones` 中的条目时间戳属于 systemui / GMS，与本 app 无关。
+
+## 阻塞原因（已定位，属环境性能）
+
+三个测试用例都在**第一个 `queueEvent` 上超时**（`gl()`，上限 20 s），完全没有产生任何 `CubismSmoke` 标记。
+
+根因是模拟器 GL 慢到不可用：
+
+```
+D EGL_emulation: app_time_stats: avg=5236.28ms min=34.20ms max=25523.69ms count=5
+```
+
+单帧最长 **25.5 秒**。`GLSurfaceView.queueEvent` 的排队任务要等当前帧画完才执行，因此必然撞上 20 s 上限。
+
+已尝试的缓解与结果：
+
+| 尝试 | 结果 |
+|---|---|
+| 首次直接运行 | 超时（负载 52） |
+| 等负载自然回落（52 → 5.1，约 10 分钟） | 仍超时 |
+| 禁用 GMS / Play Store / launcher 释放 CPU（负载 19.8 → 4.6） | 仍超时；`twoModelSmoke` 变为 `shortMsg=Process crashed.`，但进程结束行是 `Killing ... due to finished inst`，即 instrumentation 收尾，**非我们代码崩溃** |
+
+**即使放宽超时也不可行**：单帧数秒，整套 harness 有数十次 `gl()` 与多轮 12–16 次采样，
+在该渲染速度下需要数小时，不能作为常规 Gate。
+
+## 未做的事
+
+未修改 harness 的测试逻辑与判据（只修了页大小探针这一处测量缺陷，因为它在 16 KB 设备上会给出错误数字）；
+未新增 attribution 实验；未使用 ARM64 镜像（Windows x86_64 主机上 ARM 系统镜像无法获得正常 VM 加速，
+用户已明确不建议）；未把本次结果记为 16 KB PASS 或 FAIL。
+
+## 后续可选动作（需明确授权）
+
+1. 换 `-gpu host` 或更新 emulator 后重试（本机是否具备可用 host GPU 未验证）。
+2. 若必须取得 16 KB 行为级证据，改用更轻的 16 KB 镜像（本仓库当前可用的 android-35 16 KB 变体只有
+   `google_apis_playstore_ps16k`；`google_apis_ps16k` 未见提供）。
+3. 在真机（16 KB 设备或 CD12Max）上补测——与 ARM64 目标验证合并进行。
